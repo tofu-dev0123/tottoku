@@ -1,84 +1,36 @@
-import { AlertCircle, ChevronRight, Clock, Search, User } from "lucide-react";
-import Link from "next/link";
-import { BottomNav } from "@/components/BottomNav";
+import { DesktopFiler } from "@/components/home/DesktopFiler";
+import { MobileHome } from "@/components/home/MobileHome";
 import { auth } from "@/lib/auth";
-import { daysUntil, todayInJST } from "@/lib/date";
 import { getExpiringDocuments } from "@/server/dashboard";
+import { getFilerCounts, getFilerDocuments, getFolderSummaries } from "@/server/filer";
 
-// 画面1: ホーム。期限が近い書類 + 検索窓。アプリの起点(docs/screens.html 画面1)。
+// ホーム。モバイルは「ホーム」(MobileHome)、PC はファイラー(DesktopFiler)を出し分ける。
+// 別レイアウトを CSS の可視性で切替(SSR 安全・データ取得は1回)。
 export default async function HomePage() {
-  const [session, docs] = await Promise.all([auth(), getExpiringDocuments()]);
-  const today = todayInJST();
+  const [session, expiring, folders, documents, counts] = await Promise.all([
+    auth(),
+    getExpiringDocuments(),
+    getFolderSummaries(),
+    getFilerDocuments(),
+    getFilerCounts(),
+  ]);
+  const displayName = session?.user?.displayName ?? "";
+  const email = session?.user?.email ?? null;
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-gray-50 pb-24">
-      <header className="flex items-center justify-between px-5 py-4">
-        <div>
-          <p className="text-[13px] text-gray-500">おかえりなさい</p>
-          <p className="mt-0.5 text-lg font-medium">わが家の書類</p>
-        </div>
-        <div
-          className="flex size-9 items-center justify-center rounded-full bg-blue-100 text-blue-700"
-          title={session?.user?.displayName ?? undefined}
-        >
-          <User className="size-5" />
-        </div>
-      </header>
-
-      <div className="px-5">
-        <Link
-          href="/search"
-          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-gray-400"
-        >
-          <Search className="size-4" />
-          <span className="text-sm">書類を検索(例: 自動車保険)</span>
-        </Link>
+    <>
+      <div className="md:hidden">
+        <MobileHome displayName={displayName} docs={expiring} />
       </div>
-
-      <section className="px-5 pt-5">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm font-medium">期限が近い書類</span>
-          <Link href="/documents?expiring_within=60" className="text-xs text-blue-700">
-            すべて見る
-          </Link>
-        </div>
-
-        {docs.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-10 text-center text-sm text-gray-400">
-            期限が近い書類はありません
-          </p>
-        ) : (
-          <ul className="space-y-2">
-            {docs.map((d) => {
-              const left = daysUntil(d.expiryDate, today);
-              const urgent = left <= 14;
-              return (
-                <li key={d.id}>
-                  <Link
-                    href={`/documents/${d.id}`}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-3 ${
-                      urgent ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
-                    }`}
-                  >
-                    {urgent ? (
-                      <AlertCircle className="size-6 shrink-0" />
-                    ) : (
-                      <Clock className="size-6 shrink-0" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-gray-900">{d.title}</p>
-                      <p className="mt-0.5 text-xs">期限まで あと {left}日</p>
-                    </div>
-                    <ChevronRight className="size-4 shrink-0" />
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      <BottomNav active="home" />
-    </div>
+      <div className="hidden md:block">
+        <DesktopFiler
+          displayName={displayName}
+          email={email}
+          folders={folders}
+          documents={documents}
+          counts={counts}
+        />
+      </div>
+    </>
   );
 }
