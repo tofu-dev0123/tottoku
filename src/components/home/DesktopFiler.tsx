@@ -40,14 +40,14 @@ export function DesktopFiler({
   return (
     <div className="flex h-dvh bg-white text-gray-900">
       {/* Sidebar */}
-      <aside className="flex w-60 shrink-0 flex-col border-r border-gray-200 bg-gray-100 p-3">
+      <aside className="flex w-60 shrink-0 flex-col border-r border-gray-200 bg-[#f1f2f4] p-3">
         <div className="px-2 py-2">
           <Image
-            src="/tottoku.png"
+            src="/tottoku-gray.png"
             alt="とっとく"
-            width={745}
-            height={280}
-            className="h-6 w-auto"
+            width={751}
+            height={283}
+            className="h-8 w-auto"
           />
         </div>
 
