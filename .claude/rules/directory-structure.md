@@ -41,16 +41,16 @@ src/
 
 ## API パス → ファイル対応（設計書 §2）
 
-| API パス | ファイル | メソッド |
-|---|---|---|
-| `/api/auth/*` | `app/api/auth/[...nextauth]/route.ts` | Auth.js |
-| `/api/uploads/presign` | `app/api/uploads/presign/route.ts` | POST |
-| `/api/documents` | `app/api/documents/route.ts` | GET(一覧) / POST(作成) |
-| `/api/documents/:id` | `app/api/documents/[id]/route.ts` | GET / PATCH / DELETE |
-| `/api/documents/:id/download` | `app/api/documents/[id]/download/route.ts` | GET |
-| `/api/folders` | `app/api/folders/route.ts` | GET / POST |
-| `/api/folders/tree` | `app/api/folders/tree/route.ts` | GET |
-| `/api/folders/:id` | `app/api/folders/[id]/route.ts` | GET / PATCH / DELETE |
-| `/api/tags` | `app/api/tags/route.ts` | GET |
-| `/api/dashboard` | `app/api/dashboard/route.ts` | GET |
-| `/api/activity` | `app/api/activity/route.ts` | GET |
+| API パス                      | ファイル                                   | メソッド               |
+| ----------------------------- | ------------------------------------------ | ---------------------- |
+| `/api/auth/*`                 | `app/api/auth/[...nextauth]/route.ts`      | Auth.js                |
+| `/api/uploads/presign`        | `app/api/uploads/presign/route.ts`         | POST                   |
+| `/api/documents`              | `app/api/documents/route.ts`               | GET(一覧) / POST(作成) |
+| `/api/documents/:id`          | `app/api/documents/[id]/route.ts`          | GET / PATCH / DELETE   |
+| `/api/documents/:id/download` | `app/api/documents/[id]/download/route.ts` | GET                    |
+| `/api/folders`                | `app/api/folders/route.ts`                 | GET / POST             |
+| `/api/folders/tree`           | `app/api/folders/tree/route.ts`            | GET                    |
+| `/api/folders/:id`            | `app/api/folders/[id]/route.ts`            | GET / PATCH / DELETE   |
+| `/api/tags`                   | `app/api/tags/route.ts`                    | GET                    |
+| `/api/dashboard`              | `app/api/dashboard/route.ts`               | GET                    |
+| `/api/activity`               | `app/api/activity/route.ts`                | GET                    |

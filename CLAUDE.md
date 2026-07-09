@@ -41,6 +41,8 @@ pnpm format:check   # 整形チェック（CI 用）
 @.claude/rules/directory-structure.md
 @.claude/rules/file-conventions.md
 @.claude/rules/coding-conventions.md
+@.claude/rules/testing.md
+@.claude/rules/logging.md
 
 ## ブランチ / コミット規約
 
