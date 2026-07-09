@@ -32,6 +32,15 @@ pnpm format:check   # 整形チェック（CI 用）
 
 - ソースは `src/`。import alias は `@/*` → `src/*`
 - 設計書は `docs/`（`data-model-and-api.md` が仕様の正、`schema.sql` が DDL、`screens.html` がモック）
+- DB は Drizzle ORM、リクエスト検証は Zod、AWS リソースは `infra/` の CloudFormation で管理
+
+## 実装規約
+
+構成・命名・実装の詳細規約は以下を参照（このファイルから常時読み込み）:
+
+@.claude/rules/directory-structure.md
+@.claude/rules/file-conventions.md
+@.claude/rules/coding-conventions.md
 
 ## ブランチ / コミット規約
 
