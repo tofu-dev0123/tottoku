@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { daysUntil } from "./date";
+import { addDays, daysUntil } from "./date";
+
+describe("addDays", () => {
+  it("n 日後を返す", () => {
+    expect(addDays("2026-07-09", 30)).toBe("2026-08-08");
+  });
+  it("月をまたぐ", () => {
+    expect(addDays("2026-07-25", 10)).toBe("2026-08-04");
+  });
+});
 
 describe("daysUntil", () => {
   it("将来の日付は正の日数", () => {
