@@ -1,0 +1,8 @@
+.next
+out
+build
+node_modules
+pnpm-lock.yaml
+# 設計書・README は手書きの正。自動整形の対象外にする
+docs/
+README.md
