@@ -1,0 +1,24 @@
+# ローカル開発用 PostgreSQL。
+# 用途: drizzle-kit のマイグレーション適用と Vitest 統合テスト。
+# 本番/検証は Neon。アプリ本体(pnpm dev)は Neon の dev/staging ブランチに接続する。
+# 起動: docker compose up -d  /  停止: docker compose down
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: tottoku-db
+    environment:
+      POSTGRES_USER: tottoku
+      POSTGRES_PASSWORD: tottoku
+      POSTGRES_DB: tottoku
+    ports:
+      - "5432:5432"
+    volumes:
+      - tottoku-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tottoku -d tottoku"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  tottoku-db-data:

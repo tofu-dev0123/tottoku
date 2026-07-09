@@ -15,7 +15,7 @@
 ## DB（Drizzle）
 
 - アクセスは **Drizzle のみ**。生 SQL の直書きは原則しない。
-- スキーマ変更時は **`docs/schema.sql`（仕様の正）と `src/db/schema.ts` を両方更新**し、migration は **drizzle-kit** で生成する。
+- スキーマの正は **`src/db/schema.ts`**。変更は schema.ts を編集し **drizzle-kit** で migration を生成する（詳細は `docs/db/migrations.md`）。
 
 ## セキュリティ（設計書 §3 準拠・厳守）
 
