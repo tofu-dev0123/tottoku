@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家庭書類管理 — 画面モック</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css">
+<style>
+  :root {
+    --surface-2: #ffffff;
+    --surface-1: #f5f4ef;
+    --surface-0: #ebe9e1;
+    --text-primary: #2b2b28;
+    --text-secondary: #6b6a63;
+    --text-muted: #9a988f;
+    --text-accent: #185fa5;
+    --bg-accent: #e6f1fb;
+    --text-danger: #a32d2d;
+    --bg-danger: #fcebeb;
+    --border: rgba(0,0,0,0.10);
+    --border-strong: rgba(0,0,0,0.20);
+    --radius: 8px;
+    --blue-bg:#e6f1fb; --blue-fg:#0c447c;
+    --teal-bg:#e1f5ee; --teal-fg:#085041;
+    --purple-bg:#eeedfe; --purple-fg:#3c3489;
+    --coral-bg:#faece7; --coral-fg:#712b13;
+    --amber-bg:#faeeda; --amber-fg:#633806;
+    --red-bg:#fcebeb; --red-fg:#791f1f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-2:#26251f; --surface-1:#1e1d18; --surface-0:#151410;
+      --text-primary:#e9e7dd; --text-secondary:#b0aea4; --text-muted:#807e75;
+      --text-accent:#85b7eb; --bg-accent:#0c447c;
+      --text-danger:#f09595; --bg-danger:#501313;
+      --border:rgba(255,255,255,0.12); --border-strong:rgba(255,255,255,0.22);
+      --blue-bg:#0c447c; --blue-fg:#b5d4f4;
+      --teal-bg:#085041; --teal-fg:#9fe1cb;
+      --purple-bg:#3c3489; --purple-fg:#cecbf6;
+      --coral-bg:#712b13; --coral-fg:#f5c4b3;
+      --amber-bg:#633806; --amber-fg:#fac775;
+      --red-bg:#501313; --red-fg:#f7c1c1;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1rem 4rem;
+    background: var(--surface-0);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    line-height: 1.6;
+  }
+  .page-head { max-width: 1200px; margin: 0 auto 2rem; }
+  .page-head h1 { font-size: 22px; font-weight: 500; margin: 0 0 4px; }
+  .page-head p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+  .grid {
+    max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px; align-items: start;
+  }
+  .screen-label { font-size: 13px; color: var(--text-secondary); margin: 0 0 8px 4px; font-weight: 500; }
+  .phone {
+    background: var(--surface-2); border: 0.5px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+  }
+  .bar { padding: 0.85rem 1.25rem; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .sec { padding: 0.75rem 1.25rem; }
+  .muted { color: var(--text-muted); }
+  .sub { color: var(--text-secondary); }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .divider { border-bottom: 0.5px solid var(--border); }
+  .chip { font-size: 12px; padding: 5px 10px; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px; }
+  .pill { font-size: 12px; padding: 5px 10px; border-radius: 14px; }
+  .card-field { background: var(--surface-1); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 9px 12px; }
+  .blue { background: var(--blue-bg); color: var(--blue-fg); }
+  .teal { background: var(--teal-bg); color: var(--teal-fg); }
+  .purple { background: var(--purple-bg); color: var(--purple-fg); }
+  .coral { background: var(--coral-bg); color: var(--coral-fg); }
+  .amber { background: var(--amber-bg); color: var(--amber-fg); }
+  .red { background: var(--red-bg); color: var(--red-fg); }
+  .i { font-size: 20px; }
+  .primary-btn { width:100%; background: var(--text-accent); color: var(--surface-2); border: none; border-radius: var(--radius); padding: 12px; font-size: 15px; font-weight: 500; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; }
+  table.meta { width: 100%; font-size: 13px; border-collapse: collapse; }
+  table.meta td { padding: 6px 0; }
+  table.meta tr + tr td { border-top: 0.5px solid var(--border); }
+  mark { background: var(--bg-accent); color: var(--text-accent); border-radius: 3px; padding: 0 2px; }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>トットク — 画面モック</h1>
+  <p>家族の大事な書類を、大切にとっておく。夫婦2名の個人利用 / Next.js + Vercel / ストレージ S3 / メタデータ PostgreSQL。全7画面の静的モックです。</p>
+</div>
+
+<div class="grid">
+
+  <!-- 0. ログイン -->
+  <div>
+    <p class="screen-label">0. ログイン</p>
+    <div class="phone">
+      <div style="padding:3rem 1.75rem 2rem;text-align:center;">
+        <div style="width:72px;height:72px;border-radius:20px;margin:0 auto 20px;" class="blue row"><i class="ti ti-archive" style="margin:auto;font-size:38px;"></i></div>
+        <p style="margin:0;font-size:26px;font-weight:500;letter-spacing:0.04em;">トットク</p>
+        <p style="margin:10px 0 0;font-size:13px;line-height:1.7;" class="sub">家族の大事な書類を、<br>大切にとっておく。</p>
+      </div>
+      <div style="padding:0 1.75rem 1.25rem;">
+        <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;font-size:14px;font-weight:500;background:var(--surface-2);border:0.5px solid var(--border-strong);border-radius:var(--radius);color:var(--text-primary);cursor:pointer;"><i class="ti ti-brand-google" style="font-size:18px;"></i> Google でログイン</button>
+        <p style="margin:14px 0 0;font-size:11px;text-align:center;line-height:1.6;" class="muted"><i class="ti ti-lock" style="font-size:12px;"></i> 登録された家族だけがログインできます</p>
+      </div>
+      <div style="padding:1rem 1.75rem;border-top:0.5px solid var(--border);background:var(--surface-1);">
+        <div class="row" style="gap:10px;"><i class="ti ti-shield-check" style="font-size:18px;" class="sub"></i><p style="margin:0;font-size:11px;line-height:1.6;" class="sub">書類は暗号化して保管され、家族以外はアクセスできません</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1. ホーム -->
+  <div>
+    <p class="screen-label">1. ホーム</p>
+    <div class="phone">
+      <div class="bar">
+        <div>
+          <p style="margin:0;font-size:13px;" class="sub">おかえりなさい</p>
+          <p style="margin:2px 0 0;font-size:18px;font-weight:500;">わが家の書類</p>
+        </div>
+        <div style="width:36px;height:36px;border-radius:50%;" class="blue row" ><i class="ti ti-user" style="margin:auto;font-size:20px;"></i></div>
+      </div>
+      <div class="sec">
+        <div class="card-field row" style="gap:8px;"><i class="ti ti-search muted"></i><span class="muted" style="font-size:14px;">書類を検索(例: 自動車保険)</span></div>
+      </div>
+      <div class="sec" style="padding-top:0;">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px;"><span style="font-size:14px;font-weight:500;">期限が近い書類</span><span style="font-size:12px;color:var(--text-accent);">すべて見る</span></div>
+        <div class="red row" style="border-radius:12px;padding:12px;margin-bottom:8px;">
+          <i class="ti ti-alert-circle" style="font-size:22px;"></i>
+          <div style="flex:1;"><p style="margin:0;font-size:14px;font-weight:500;">自動車保険 契約書</p><p style="margin:2px 0 0;font-size:12px;">更新期限まで あと 8日</p></div>
+          <i class="ti ti-chevron-right"></i>
+        </div>
+        <div class="amber row" style="border-radius:12px;padding:12px;">
+          <i class="ti ti-clock" style="font-size:22px;"></i>
+          <div style="flex:1;"><p style="margin:0;font-size:14px;font-weight:500;">長男 保育園 継続届</p><p style="margin:2px 0 0;font-size:12px;">提出期限まで あと 23日</p></div>
+          <i class="ti ti-chevron-right"></i>
+        </div>
+      </div>
+      <div class="bar" style="border-top:0.5px solid var(--border);border-bottom:none;justify-content:space-around;">
+        <div style="text-align:center;color:var(--text-accent);"><i class="ti ti-home i"></i><p style="margin:2px 0 0;font-size:10px;">ホーム</p></div>
+        <div style="text-align:center;" class="muted"><i class="ti ti-folder i"></i><p style="margin:2px 0 0;font-size:10px;">フォルダ</p></div>
+        <div style="text-align:center;">
+          <div style="width:46px;height:46px;border-radius:50%;background:var(--text-accent);margin-top:-18px;border:3px solid var(--surface-2);" class="row"><i class="ti ti-camera" style="margin:auto;font-size:24px;color:var(--surface-2);"></i></div>
+          <p style="margin:2px 0 0;font-size:10px;" class="sub">追加</p>
+        </div>
+        <div style="text-align:center;" class="muted"><i class="ti ti-bell i"></i><p style="margin:2px 0 0;font-size:10px;">通知</p></div>
+        <div style="text-align:center;" class="muted"><i class="ti ti-settings i"></i><p style="margin:2px 0 0;font-size:10px;">設定</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. フォルダ (ファイラー) -->
+  <div>
+    <p class="screen-label">2. フォルダ(ファイラー)</p>
+    <div class="phone">
+      <div class="bar" style="justify-content:flex-start;gap:8px;font-size:13px;">
+        <i class="ti ti-folder" style="font-size:16px;"></i>
+        <span style="color:var(--text-accent);">契約</span><i class="ti ti-chevron-right" style="font-size:13px;"></i><span style="font-weight:500;">東京海上</span>
+      </div>
+      <div class="sec" style="padding-bottom:0;">
+        <div class="row divider" style="padding:10px 4px;"><i class="ti ti-folder" style="font-size:24px;color:var(--text-accent);"></i><div style="flex:1;"><p style="margin:0;font-size:14px;font-weight:500;">自動車保険</p><p style="margin:1px 0 0;font-size:11px;" class="muted">3件</p></div><i class="ti ti-chevron-right muted"></i></div>
+        <div class="row divider" style="padding:10px 4px;"><i class="ti ti-folder" style="font-size:24px;color:var(--text-accent);"></i><div style="flex:1;"><p style="margin:0;font-size:14px;font-weight:500;">火災保険</p><p style="margin:1px 0 0;font-size:11px;" class="muted">2件</p></div><i class="ti ti-chevron-right muted"></i></div>
+        <div class="row divider" style="padding:10px 4px;"><i class="ti ti-file-text" style="font-size:22px;" class="sub"></i><div style="flex:1;"><p style="margin:0;font-size:14px;">自動車保険 契約更新のご案内</p><div class="row" style="gap:6px;margin-top:3px;"><span style="font-size:11px;" class="muted">2026-07-01</span><span class="teal pill" style="padding:1px 6px;border-radius:4px;font-size:10px;"><i class="ti ti-folders" style="font-size:11px;"></i> 2</span></div></div></div>
+        <div class="row" style="padding:10px 4px;"><i class="ti ti-file-text" style="font-size:22px;" class="sub"></i><div style="flex:1;"><p style="margin:0;font-size:14px;">団体割引 適用証明書</p><p style="margin:3px 0 0;font-size:11px;" class="muted">2026-06-15</p></div></div>
+      </div>
+      <div class="teal" style="margin:0.5rem 1.25rem;border-radius:10px;padding:9px 12px;display:flex;gap:8px;">
+        <i class="ti ti-info-circle" style="font-size:15px;margin-top:1px;"></i>
+        <p style="margin:0;font-size:11px;"><b style="font-weight:500;">「更新のご案内」</b>の 🗂2 は2つのフォルダに入っている印。「保険 › 自動車」からも同じ書類に辿り着けます</p>
+      </div>
+      <div class="bar" style="border-top:0.5px solid var(--border);border-bottom:none;gap:10px;">
+        <button style="flex:1;padding:11px;font-size:13px;background:transparent;border:0.5px solid var(--border-strong);border-radius:var(--radius);color:var(--text-primary);cursor:pointer;"><i class="ti ti-folder-plus"></i> フォルダ作成</button>
+        <button style="flex:1;padding:11px;font-size:13px;background:transparent;border:0.5px solid var(--border-strong);border-radius:var(--radius);color:var(--text-primary);cursor:pointer;"><i class="ti ti-arrows-sort"></i> 並び替え</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 保存フォーム -->
+  <div>
+    <p class="screen-label">3. 保存フォーム</p>
+    <div class="phone">
+      <div class="bar"><i class="ti ti-x sub" style="font-size:20px;"></i><span style="font-size:15px;font-weight:500;">書類を保存</span><span style="width:20px;"></span></div>
+      <div class="sec row" style="align-items:flex-start;gap:12px;">
+        <div style="width:60px;height:78px;border-radius:8px;" class="card-field row" ><div style="margin:auto;text-align:center;"><i class="ti ti-file-text" style="font-size:26px;" class="muted"></i></div></div>
+        <div style="flex:1;">
+          <label style="font-size:12px;" class="sub">タイトル <span style="color:var(--text-danger);">*</span></label>
+          <div class="card-field" style="border-color:var(--border-strong);margin-top:4px;"><span style="font-size:14px;">自動車保険 契約更新のご案内</span></div>
+        </div>
+      </div>
+      <div class="sec" style="padding-top:0;">
+        <label style="font-size:12px;" class="sub">保存先フォルダ <span style="color:var(--text-danger);">*</span></label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px;">
+          <span class="blue chip"><i class="ti ti-folder" style="font-size:13px;"></i>契約 › 東京海上 <i class="ti ti-x" style="font-size:13px;"></i></span>
+          <span class="blue chip"><i class="ti ti-folder" style="font-size:13px;"></i>保険 › 自動車 <i class="ti ti-x" style="font-size:13px;"></i></span>
+        </div>
+        <div class="card-field row" style="gap:8px;border-style:dashed;border-color:var(--border-strong);"><i class="ti ti-plus" style="font-size:16px;color:var(--text-accent);"></i><span style="font-size:13px;" class="sub">フォルダを選ぶ / 新規作成</span></div>
+        <p style="margin:6px 0 0;font-size:11px;" class="muted">複数のフォルダに入れられます。どこからでも同じ書類に辿り着けます</p>
+      </div>
+      <div class="sec" style="padding-top:0;">
+        <div class="row" style="justify-content:space-between;padding:4px 0;"><span style="font-size:13px;" class="sub">詳細情報(任意)</span><i class="ti ti-chevron-down muted"></i></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;">
+          <div><label style="font-size:11px;" class="muted">書類の日付</label><div class="card-field row" style="gap:6px;margin-top:4px;padding:8px 10px;"><i class="ti ti-calendar" style="font-size:14px;" class="muted"></i><span style="font-size:13px;">2026-07-01</span></div></div>
+          <div><label style="font-size:11px;" class="muted">更新・提出期限</label><div class="card-field row" style="gap:6px;margin-top:4px;padding:8px 10px;"><i class="ti ti-bell" style="font-size:14px;" class="muted"></i><span style="font-size:13px;" class="muted">未設定</span></div></div>
+        </div>
+        <div style="margin-top:10px;"><label style="font-size:11px;" class="muted">メモ</label><div class="card-field" style="margin-top:4px;"><span style="font-size:13px;" class="muted">車検の時に一緒に提示…</span></div></div>
+        <div style="margin-top:10px;"><label style="font-size:11px;" class="muted">タグ</label><div style="margin-top:6px;"><span class="pill" style="border:0.5px dashed var(--border-strong);color:var(--text-muted);">+ タグを追加</span></div></div>
+      </div>
+      <div class="sec" style="border-top:0.5px solid var(--border);">
+        <button class="primary-btn"><i class="ti ti-check"></i> 保存する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 検索結果 -->
+  <div>
+    <p class="screen-label">4. 検索結果</p>
+    <div class="phone">
+      <div class="bar"><div class="card-field row" style="gap:8px;flex:1;border-color:var(--border-strong);"><i class="ti ti-search sub"></i><span style="flex:1;font-size:14px;">保険</span><i class="ti ti-x muted" style="font-size:16px;"></i></div></div>
+      <div class="sec divider" style="display:flex;gap:6px;flex-wrap:wrap;">
+        <span class="blue pill"><i class="ti ti-folder" style="font-size:12px;"></i> フォルダ</span>
+        <span class="pill" style="border:0.5px solid var(--border-strong);" class="sub">対象者</span>
+        <span class="pill" style="border:0.5px solid var(--border-strong);" class="sub">年度</span>
+        <span class="pill" style="border:0.5px solid var(--border-strong);" class="sub"><i class="ti ti-adjustments-horizontal" style="font-size:13px;"></i> 絞り込み</span>
+      </div>
+      <div class="sec" style="padding-top:0.5rem;">
+        <p style="margin:4px 0 8px;font-size:12px;" class="muted">5件の書類</p>
+        <div class="row divider" style="align-items:flex-start;gap:12px;padding:10px 0;"><i class="ti ti-file-text" style="font-size:22px;margin-top:2px;" class="sub"></i><div style="flex:1;"><p style="margin:0;font-size:14px;">自動車<mark>保険</mark> 契約更新のご案内</p><p style="margin:3px 0 0;font-size:11px;" class="muted">契約 › 東京海上 · 2026-07-01</p><p style="margin:4px 0 0;font-size:11px;" class="sub">…契約者様の<mark>保険</mark>契約は本年7月17日をもって…</p></div></div>
+        <div class="row divider" style="align-items:flex-start;gap:12px;padding:10px 0;"><i class="ti ti-file-text" style="font-size:22px;margin-top:2px;" class="sub"></i><div style="flex:1;"><p style="margin:0;font-size:14px;">火災<mark>保険</mark> 証券</p><p style="margin:3px 0 0;font-size:11px;" class="muted">保険 › 住居 · 2025-11-20</p></div></div>
+        <div class="row" style="align-items:flex-start;gap:12px;padding:10px 0;"><i class="ti ti-file-text" style="font-size:22px;margin-top:2px;" class="sub"></i><div style="flex:1;"><p style="margin:0;font-size:14px;">学資<mark>保険</mark> 契約内容確認書</p><p style="margin:3px 0 0;font-size:11px;" class="muted">教育 › 長男 · 2024-04-10</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 書類詳細 -->
+  <div>
+    <p class="screen-label">5. 書類詳細</p>
+    <div class="phone">
+      <div class="bar"><i class="ti ti-arrow-left sub" style="font-size:20px;"></i><div style="display:flex;gap:16px;"><i class="ti ti-download sub" style="font-size:19px;"></i><i class="ti ti-edit sub" style="font-size:19px;"></i><i class="ti ti-trash sub" style="font-size:19px;"></i></div></div>
+      <div class="sec">
+        <div style="height:150px;border-radius:10px;" class="card-field row"><div style="margin:auto;text-align:center;"><i class="ti ti-file-text" style="font-size:44px;" class="muted"></i><p style="margin:6px 0 0;font-size:11px;" class="muted">タップでプレビュー · PDF 2ページ</p></div></div>
+        <p style="margin:12px 0 0;font-size:17px;font-weight:500;">自動車保険 契約更新のご案内</p>
+      </div>
+      <div class="amber row" style="margin:0.5rem 1.25rem;border-radius:10px;padding:11px 13px;gap:10px;">
+        <i class="ti ti-bell" style="font-size:20px;"></i>
+        <div style="flex:1;"><p style="margin:0;font-size:13px;font-weight:500;">更新期限 2026-07-17</p><p style="margin:1px 0 0;font-size:11px;">8日前にリマインドします</p></div>
+        <i class="ti ti-chevron-right" style="font-size:16px;"></i>
+      </div>
+      <div class="sec">
+        <p style="margin:6px 0;font-size:12px;" class="muted">保存されているフォルダ</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+          <span class="blue chip"><i class="ti ti-folder" style="font-size:12px;"></i>契約 › 東京海上</span>
+          <span class="blue chip"><i class="ti ti-folder" style="font-size:12px;"></i>保険 › 自動車</span>
+        </div>
+        <table class="meta">
+          <tr><td class="sub">書類の日付</td><td style="text-align:right;">2026-07-01</td></tr>
+          <tr><td class="sub">対象者</td><td style="text-align:right;">世帯 <span class="muted" style="font-size:11px;">(フォルダ/タグで表現)</span></td></tr>
+          <tr><td class="sub" style="vertical-align:top;">タグ</td><td style="text-align:right;color:var(--text-accent);font-size:11px;">#自動車 #東京海上</td></tr>
+        </table>
+        <div style="margin-top:12px;padding:10px 12px;background:var(--surface-1);border-radius:var(--radius);"><p style="margin:0;font-size:11px;" class="muted">メモ</p><p style="margin:3px 0 0;font-size:13px;">車検の時に一緒に提示。等級ダウン注意。</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. 通知 -->
+  <div>
+    <p class="screen-label">6. 通知</p>
+    <div class="phone">
+      <div class="bar"><span style="font-size:16px;font-weight:500;">通知</span><span style="font-size:12px;color:var(--text-accent);">すべて既読</span></div>
+      <div class="sec">
+        <p style="margin:4px 0 8px;font-size:12px;" class="muted">期限が近い</p>
+        <div class="row divider" style="padding:11px 0;"><div class="red row" style="width:38px;height:38px;border-radius:50%;"><i class="ti ti-alert-circle" style="margin:auto;font-size:20px;"></i></div><div style="flex:1;"><p style="margin:0;font-size:14px;">自動車保険 契約更新のご案内</p><p style="margin:2px 0 0;font-size:12px;color:var(--text-danger);">更新期限まで あと 8日</p></div><i class="ti ti-chevron-right muted"></i></div>
+        <div class="row divider" style="padding:11px 0;"><div class="amber row" style="width:38px;height:38px;border-radius:50%;"><i class="ti ti-clock" style="margin:auto;font-size:20px;"></i></div><div style="flex:1;"><p style="margin:0;font-size:14px;">長男 保育園 継続届</p><p style="margin:2px 0 0;font-size:12px;" class="sub">提出期限まで あと 23日</p></div><i class="ti ti-chevron-right muted"></i></div>
+        <p style="margin:14px 0 8px;font-size:12px;" class="muted">最近の追加</p>
+        <div class="row divider" style="padding:11px 0;"><div class="teal row" style="width:38px;height:38px;border-radius:50%;"><i class="ti ti-user" style="margin:auto;font-size:19px;"></i></div><div style="flex:1;"><p style="margin:0;font-size:14px;">妻が「火災保険 証券」を追加しました</p><p style="margin:2px 0 0;font-size:12px;" class="muted">昨日 21:04</p></div></div>
+        <div class="row" style="padding:11px 0;"><div class="teal row" style="width:38px;height:38px;border-radius:50%;"><i class="ti ti-folder-plus" style="margin:auto;font-size:19px;"></i></div><div style="flex:1;"><p style="margin:0;font-size:14px;">フォルダ「教育 › 次男」を作成しました</p><p style="margin:2px 0 0;font-size:12px;" class="muted">3日前</p></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
