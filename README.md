@@ -28,7 +28,8 @@
 .
 ├─ README.md
 └─ docs/
-   ├─ data-model-and-api.md   … データモデル & API 設計書
+   ├─ data-model-and-api.md   … 全体設計(データモデル + S3 + 着手順)
+   ├─ api/                    … API 設計(エンドポイント一覧・req/res)
    ├─ db/                     … DB 設計(スキーマの正は src/db/schema.ts)
    └─ screens.html            … 全6画面の静的モック(ブラウザで開いて確認)
 ```

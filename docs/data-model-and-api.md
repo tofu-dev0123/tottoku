@@ -113,101 +113,13 @@ CREATE INDEX documents_search_idx ON documents USING gin (search_tsv);
 
 ---
 
-## 2. API 設計 (Next.js Route Handlers)
+## 2. API 設計
 
-### 共通方針
+API の詳細（エンドポイント一覧・リクエスト/レスポンス例・クエリパラメータ）は [`docs/api/`](./api/) を正とする。
 
-- すべて `/api/*` の Route Handler。Vercel の Serverless Function 制限 (ペイロード 4.5MB、実行時間) を踏まえ、**ファイル実体は API を経由させない。** アップロード/ダウンロードは S3 署名付き URL でクライアント↔S3 を直結し、API は「URL 発行」と「メタデータ CRUD」だけを担う。
-- 全エンドポイントで認証必須。セッションの email が allowlist に含まれることを検証。
-- レスポンスは JSON。日時は ISO 8601 文字列。
-
-### 2.1 認証
-
-| メソッド | パス | 説明 |
-|---|---|---|
-| GET | /api/auth/session | 現在のログイン状態と user 情報 |
-| — | (Auth.js が /api/auth/* を提供) | Google ログイン / コールバック / ログアウト |
-
-### 2.2 アップロード (2フェーズ方式)
-
-書類追加は「①S3への直接アップロード用URLをもらう → ②クライアントがS3へ直接PUT → ③メタデータを登録」の3ステップ。
-
-| メソッド | パス | 説明 |
-|---|---|---|
-| POST | /api/uploads/presign | アップロード用の署名付き PUT URL を発行。body: `{ filename, mime_type }` → returns: `{ upload_url, s3_key }` |
-| POST | /api/documents | ②で S3 に上げた後、メタデータを登録。body 下記。document を作成し folders/tags も紐付け |
-
-`POST /api/documents` の body 例:
-
-```json
-{
-  "title": "自動車保険 契約更新のご案内",
-  "s3_key": "documents/9f3c...pdf",
-  "mime_type": "application/pdf",
-  "doc_date": "2026-07-01",
-  "expiry_date": "2026-07-17",
-  "memo": "車検の時に一緒に提示。",
-  "folder_ids": ["<契約>東京海上のid", "<保険>自動車のid"],
-  "tags": ["自動車", "東京海上"]
-}
-```
-
-`folder_ids` に複数渡せることが「複数フォルダ所属」の入口。`tags` は名前で受け取り、サーバー側で既存タグを探すか新規作成 (upsert) して document_tags を張る。
-
-### 2.3 書類 (documents)
-
-| メソッド | パス | 説明 |
-|---|---|---|
-| GET | /api/documents | 一覧。クエリで絞り込み (下記) |
-| GET | /api/documents/:id | 1件の詳細 (メタデータ + 所属フォルダ + タグ) |
-| GET | /api/documents/:id/download | ダウンロード用の署名付き GET URL を発行 (短命) |
-| PATCH | /api/documents/:id | メタデータ更新。folder_ids / tags も差し替え可 |
-| DELETE | /api/documents/:id | 削除 (DB行削除 + S3オブジェクト削除) |
-
-`GET /api/documents` のクエリパラメータ:
-
-| パラメータ | 例 | 説明 |
-|---|---|---|
-| q | 保険 | 全文検索 (title + ocr_text)。検索画面 |
-| folder_id | uuid | 指定フォルダ直下の書類。ファイラー画面 |
-| person | 長男 | 対象者での絞り込み ※注 |
-| tag | 自動車 | タグでの絞り込み |
-| year | 2026 | doc_date の年での絞り込み |
-| expiring_within | 30 | 期限が N 日以内。ホーム/通知画面 |
-| sort | doc_date_desc | 並び替え |
-| limit / cursor | 20 / … | ページング |
-
-※注「対象者 (person)」: 専用カラムを設けず、「長男」「妻」などのフォルダ or タグで表現する設計。person フィルタは実際には folder/tag フィルタのエイリアスとして実装してよい。
-
-### 2.4 フォルダ (folders)
-
-| メソッド | パス | 説明 |
-|---|---|---|
-| GET | /api/folders | フォルダ一覧。`?parent_id=` で直下の子だけ取得。省略時はトップ階層 |
-| GET | /api/folders/tree | 全フォルダを階層ツリー構造 (JSON ネスト) で取得。フォルダ選択モーダル用 |
-| GET | /api/folders/:id | 1件 + パンくず (祖先の配列) + 直下の子フォルダ + 直下の書類 |
-| POST | /api/folders | 作成。body: `{ name, parent_id }` |
-| PATCH | /api/folders/:id | リネーム / 移動 (parent_id 変更)。※循環参照チェック必須 |
-| DELETE | /api/folders/:id | 削除。子フォルダは CASCADE。document_folders の紐付けも CASCADE で外れるが、documents 本体は消えない (他フォルダに残る/どこにも無ければ孤立) |
-
-削除時の「孤立書類」対策: フォルダ削除でどのフォルダにも属さなくなった書類を、UI 上「未分類」として拾えるようにする。実装は `GET /api/documents?folder_id=none` のような特別値で、document_folders に1行も無い書類を返す。
-
-### 2.5 タグ (tags)
-
-| メソッド | パス | 説明 |
-|---|---|---|
-| GET | /api/tags | 全タグ (絞り込み候補の表示用) |
-
-タグの作成は書類の作成/更新時に暗黙 upsert するため、独立した POST は必須ではない。
-
-### 2.6 通知 / ダッシュボード
-
-| メソッド | パス | 説明 |
-|---|---|---|
-| GET | /api/dashboard | ホーム画面用。期限が近い書類 + 最近の追加をまとめて返す |
-| GET | /api/activity | 「妻が○○を追加」等の操作履歴 (通知画面下段) |
-
-期限リマインドは、クライアントを開いた時に `expiring_within` で出すのが最小構成。プッシュ通知やメール送信まで欲しい場合は Vercel Cron で日次バッチを組み、期限が近い書類を検出してメール送信する (第2フェーズ)。activity ログを独立テーブルにするかは、必要になってから追加でよい。
+- 共通方針（認証必須・allowlist・JSON/ISO 8601・エラー `{ error }`・カーソルページング・ファイルは S3 直結）は [`docs/api/README.md`](./api/README.md)。
+- 書類の削除は**論理削除**（`deleted_at`）。DB の詳細は [`docs/db/`](./db/) を参照。
+- 期限リマインドは、クライアントを開いた時に `expiring_within` で出すのが最小構成。メール送信まで欲しい場合は Vercel Cron の日次バッチ（第2フェーズ）。
 
 ---
 
