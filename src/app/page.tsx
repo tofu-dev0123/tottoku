@@ -1,65 +1,84 @@
-import Image from "next/image";
+import { AlertCircle, ChevronRight, Clock, Search, User } from "lucide-react";
+import Link from "next/link";
+import { BottomNav } from "@/components/BottomNav";
+import { auth } from "@/lib/auth";
+import { daysUntil, todayInJST } from "@/lib/date";
+import { getExpiringDocuments } from "@/server/dashboard";
 
-export default function Home() {
+// 画面1: ホーム。期限が近い書類 + 検索窓。アプリの起点(docs/screens.html 画面1)。
+export default async function HomePage() {
+  const [session, docs] = await Promise.all([auth(), getExpiringDocuments()]);
+  const today = todayInJST();
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl leading-10 font-semibold tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-gray-50 pb-24">
+      <header className="flex items-center justify-between px-5 py-4">
+        <div>
+          <p className="text-[13px] text-gray-500">おかえりなさい</p>
+          <p className="mt-0.5 text-lg font-medium">わが家の書類</p>
+        </div>
+        <div
+          className="flex size-9 items-center justify-center rounded-full bg-blue-100 text-blue-700"
+          title={session?.user?.displayName ?? undefined}
+        >
+          <User className="size-5" />
+        </div>
+      </header>
+
+      <div className="px-5">
+        <Link
+          href="/search"
+          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-gray-400"
+        >
+          <Search className="size-4" />
+          <span className="text-sm">書類を検索(例: 自動車保険)</span>
+        </Link>
+      </div>
+
+      <section className="px-5 pt-5">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-sm font-medium">期限が近い書類</span>
+          <Link href="/documents?expiring_within=60" className="text-xs text-blue-700">
+            すべて見る
+          </Link>
+        </div>
+
+        {docs.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-10 text-center text-sm text-gray-400">
+            期限が近い書類はありません
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="bg-foreground text-background flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 transition-colors hover:bg-[#383838] md:w-[158px] dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        ) : (
+          <ul className="space-y-2">
+            {docs.map((d) => {
+              const left = daysUntil(d.expiryDate, today);
+              const urgent = left <= 14;
+              return (
+                <li key={d.id}>
+                  <Link
+                    href={`/documents/${d.id}`}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-3 ${
+                      urgent ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
+                    }`}
+                  >
+                    {urgent ? (
+                      <AlertCircle className="size-6 shrink-0" />
+                    ) : (
+                      <Clock className="size-6 shrink-0" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-gray-900">{d.title}</p>
+                      <p className="mt-0.5 text-xs">期限まで あと {left}日</p>
+                    </div>
+                    <ChevronRight className="size-4 shrink-0" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <BottomNav active="home" />
     </div>
   );
 }
