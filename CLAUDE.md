@@ -31,7 +31,7 @@ pnpm format:check   # 整形チェック（CI 用）
 ## ディレクトリ / 規約
 
 - ソースは `src/`。import alias は `@/*` → `src/*`
-- 設計書は `docs/`（`data-model-and-api.md` が仕様の正、`schema.sql` が DDL、`screens.html` がモック）
+- 設計書は `docs/`（`data-model-and-api.md` が API 仕様、`db/` が DB 設計、`screens.html` がモック）。DB スキーマの正は `src/db/schema.ts`
 - DB は Drizzle ORM、リクエスト検証は Zod、AWS リソースは `infra/` の CloudFormation で管理
 
 ## 実装規約
