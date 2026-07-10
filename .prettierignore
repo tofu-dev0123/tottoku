@@ -1,0 +1,10 @@
+.next
+out
+build
+node_modules
+pnpm-lock.yaml
+# drizzle-kit の生成物(snapshot/journal)は整形しない
+drizzle/
+# 設計書・README は手書きの正。自動整形の対象外にする
+docs/
+README.md

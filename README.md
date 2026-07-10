@@ -27,15 +27,14 @@
 ```
 .
 ├─ README.md
-├─ docs/
-│  └─ data-model-and-api.md   … データモデル & API 設計書(仕様の正)
-├─ db/
-│  └─ schema.sql              … 実行可能な PostgreSQL スキーマ(第1フェーズ)
-└─ mockups/
+└─ docs/
+   ├─ data-model-and-api.md   … 全体設計(データモデル + S3 + 着手順)
+   ├─ api/                    … API 設計(エンドポイント一覧・req/res)
+   ├─ db/                     … DB 設計(スキーマの正は src/db/schema.ts)
    └─ screens.html            … 全6画面の静的モック(ブラウザで開いて確認)
 ```
 
-## 画面一覧(mockups/screens.html)
+## 画面一覧(docs/screens.html)
 
 0. **ログイン** — Google ログインのみ。allowlist で家族だけが入れる入口
 1. **ホーム** — 期限が近い書類 + 検索窓。アプリの起点
@@ -52,11 +51,11 @@
 - `document_folders` … 書類⇄フォルダの多対多(「複数フォルダ所属」の実体)
 - `tags` / `document_tags` … タグの多対多
 
-詳細と全カラム定義は `docs/data-model-and-api.md`、実行可能な DDL は `db/schema.sql` を参照。
+詳細と全カラム定義は `docs/data-model-and-api.md` と `docs/db/` を参照(スキーマの正は `src/db/schema.ts`)。
 
 ## 実装の着手順(推奨)
 
-1. `db/schema.sql` を DB に適用し、サーバーレス Postgres へ接続
+1. `src/db/schema.ts` から drizzle-kit で migration を生成し Neon へ適用・接続(`docs/db/migrations.md`)
 2. Auth.js で Google ログイン + allowlist
 3. フォルダ CRUD(`/api/folders*`)— ファイラー UI の土台
 4. アップロード2フェーズ(presign → S3 直接 PUT → メタデータ登録)
