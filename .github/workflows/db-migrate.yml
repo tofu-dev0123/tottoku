@@ -1,0 +1,37 @@
+name: DB Migrate (production)
+
+# 本番 Neon へマイグレーションを手動で適用する。
+# 開発はローカル docker で完結するため CI からの staging 適用は行わない。
+# 実行: Actions タブ → "DB Migrate (production)" → Run workflow(main で実行する)。
+# 接続は direct(unpooled) URL。secret は Environment: production に持つ。
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    concurrency:
+      # 本番への並行適用を防ぐ。適用中はキャンセルしない。
+      group: db-migrate-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
