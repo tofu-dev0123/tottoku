@@ -44,21 +44,22 @@ export function DesktopFiler({
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-2.5">
           <div className="flex text-gray-400">
-            <span className="flex size-7 items-center justify-center rounded-md">
-              <ChevronLeft className="size-4" />
-            </span>
             {parent ? (
               <Link
                 href={folderHref(parent.id)}
+                aria-label="一つ上のフォルダへ戻る"
                 className="flex size-7 items-center justify-center rounded-md text-gray-700 hover:bg-gray-100"
               >
-                <ChevronRight className="size-4" />
+                <ChevronLeft className="size-4" />
               </Link>
             ) : (
               <span className="flex size-7 items-center justify-center rounded-md">
-                <ChevronRight className="size-4" />
+                <ChevronLeft className="size-4" />
               </span>
             )}
+            <span className="flex size-7 items-center justify-center rounded-md">
+              <ChevronRight className="size-4" />
+            </span>
           </div>
           <nav className="flex items-center gap-1 text-[15px] font-semibold">
             {view.breadcrumb.map((b, i) => {
