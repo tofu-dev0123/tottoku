@@ -4,7 +4,6 @@ import {
   Clock,
   FileText,
   Folder,
-  FolderPlus,
   History,
   Home,
   Inbox,
@@ -17,25 +16,31 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { daysUntil, formatDateJST, todayInJST } from "@/lib/date";
-import type { FilerCounts, FilerDocument, FolderSummary } from "@/server/filer";
+import type { FilerCounts, FilerFolder, FilerView } from "@/server/filer";
 import { LogoutButton } from "./LogoutButton";
+import { NewFolderButton } from "./NewFolderButton";
 
 const GRID = "grid grid-cols-[1fr_180px_130px_150px] items-center";
+
+function folderHref(id: string | null): string {
+  return id === null ? "/" : `/folders/${id}`;
+}
 
 export function DesktopFiler({
   displayName,
   email,
-  folders,
-  documents,
+  sidebarFolders,
   counts,
+  view,
 }: {
   displayName: string;
   email: string | null;
-  folders: FolderSummary[];
-  documents: FilerDocument[];
+  sidebarFolders: FilerFolder[];
   counts: FilerCounts;
+  view: FilerView;
 }) {
   const today = todayInJST();
+  const parent = view.breadcrumb.length > 1 ? view.breadcrumb[view.breadcrumb.length - 2] : null;
 
   return (
     <div className="flex h-dvh bg-white text-gray-900">
@@ -53,7 +58,12 @@ export function DesktopFiler({
 
         <p className="px-2 pt-3 pb-1 text-[11px] font-semibold text-gray-400">よく使う項目</p>
         <nav className="space-y-0.5">
-          <SideItem icon={<Home className="size-4" />} label="ホーム" href="/" active />
+          <SideItem
+            icon={<Home className="size-4" />}
+            label="ホーム"
+            href="/"
+            active={view.currentFolderId === null}
+          />
           <SideItem
             icon={<Clock className="size-4" />}
             label="期限が近い"
@@ -72,12 +82,13 @@ export function DesktopFiler({
 
         <p className="px-2 pt-4 pb-1 text-[11px] font-semibold text-gray-400">フォルダ</p>
         <nav className="space-y-0.5 overflow-auto">
-          {folders.map((f) => (
+          {sidebarFolders.map((f) => (
             <SideItem
               key={f.id}
               icon={<Folder className="size-4" />}
               label={f.name}
               href={`/folders/${f.id}`}
+              active={view.currentFolderId === f.id}
             />
           ))}
         </nav>
@@ -103,11 +114,36 @@ export function DesktopFiler({
             <span className="flex size-7 items-center justify-center rounded-md">
               <ChevronLeft className="size-4" />
             </span>
-            <span className="flex size-7 items-center justify-center rounded-md text-gray-700">
-              <ChevronRight className="size-4" />
-            </span>
+            {parent ? (
+              <Link
+                href={folderHref(parent.id)}
+                className="flex size-7 items-center justify-center rounded-md text-gray-700 hover:bg-gray-100"
+              >
+                <ChevronRight className="size-4" />
+              </Link>
+            ) : (
+              <span className="flex size-7 items-center justify-center rounded-md">
+                <ChevronRight className="size-4" />
+              </span>
+            )}
           </div>
-          <h1 className="text-[15px] font-semibold">わが家の書類</h1>
+          <nav className="flex items-center gap-1 text-[15px] font-semibold">
+            {view.breadcrumb.map((b, i) => {
+              const last = i === view.breadcrumb.length - 1;
+              return (
+                <span key={b.id ?? "root"} className="flex items-center gap-1">
+                  {i > 0 && <span className="text-gray-300">/</span>}
+                  {last ? (
+                    <span>{b.name}</span>
+                  ) : (
+                    <Link href={folderHref(b.id)} className="text-gray-500 hover:text-gray-900">
+                      {b.name}
+                    </Link>
+                  )}
+                </span>
+              );
+            })}
+          </nav>
           <div className="flex-1" />
           <Link
             href="/search"
@@ -124,13 +160,7 @@ export function DesktopFiler({
               <List className="size-4" />
             </span>
           </div>
-          <Link
-            href="/folders/new"
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] font-semibold"
-          >
-            <FolderPlus className="size-4" />
-            新規フォルダ
-          </Link>
+          <NewFolderButton parentId={view.currentFolderId} />
           <Link
             href="/documents/new"
             className="flex items-center gap-1.5 rounded-lg bg-blue-700 px-3 py-2 text-[13px] font-semibold text-white"
@@ -151,7 +181,7 @@ export function DesktopFiler({
             <div className="text-right">期限</div>
           </div>
 
-          {folders.map((f) => (
+          {view.folders.map((f) => (
             <Link
               key={f.id}
               href={`/folders/${f.id}`}
@@ -167,7 +197,7 @@ export function DesktopFiler({
             </Link>
           ))}
 
-          {documents.map((d) => (
+          {view.documents.map((d) => (
             <Link
               key={d.id}
               href={`/documents/${d.id}`}
@@ -186,10 +216,14 @@ export function DesktopFiler({
               </span>
             </Link>
           ))}
+
+          {view.folders.length === 0 && view.documents.length === 0 && (
+            <p className="px-5 py-10 text-center text-sm text-gray-400">このフォルダは空です</p>
+          )}
         </div>
 
         <div className="border-t border-gray-200 px-5 py-1.5 text-xs text-gray-500">
-          {folders.length} フォルダ・{documents.length} 書類
+          {view.folders.length} フォルダ・{view.documents.length} 書類
         </div>
       </div>
     </div>

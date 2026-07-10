@@ -2,17 +2,14 @@ import { DesktopFiler } from "@/components/home/DesktopFiler";
 import { MobileHome } from "@/components/home/MobileHome";
 import { auth } from "@/lib/auth";
 import { getExpiringDocuments } from "@/server/dashboard";
-import { getFilerCounts, getFilerDocuments, getFolderSummaries } from "@/server/filer";
+import { getFilerData } from "@/server/filer";
 
-// ホーム。モバイルは「ホーム」(MobileHome)、PC はファイラー(DesktopFiler)を出し分ける。
-// 別レイアウトを CSS の可視性で切替(SSR 安全・データ取得は1回)。
+// ホーム。モバイルは「ホーム」(MobileHome)、PC はファイラー(DesktopFiler ルート)。
 export default async function HomePage() {
-  const [session, expiring, folders, documents, counts] = await Promise.all([
+  const [session, expiring, filer] = await Promise.all([
     auth(),
     getExpiringDocuments(),
-    getFolderSummaries(),
-    getFilerDocuments(),
-    getFilerCounts(),
+    getFilerData(null),
   ]);
   const displayName = session?.user?.displayName ?? "";
   const email = session?.user?.email ?? null;
@@ -26,9 +23,9 @@ export default async function HomePage() {
         <DesktopFiler
           displayName={displayName}
           email={email}
-          folders={folders}
-          documents={documents}
-          counts={counts}
+          sidebarFolders={filer.sidebarFolders}
+          counts={filer.counts}
+          view={filer.view}
         />
       </div>
     </>
