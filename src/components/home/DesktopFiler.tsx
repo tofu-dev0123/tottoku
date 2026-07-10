@@ -8,7 +8,7 @@ import { FilerSidebar } from "./FilerSidebar";
 import { FolderActionsMenu } from "./FolderActionsMenu";
 import { NewFolderButton } from "./NewFolderButton";
 
-const GRID = "grid grid-cols-[1fr_180px_130px_150px] items-center";
+const GRID = "grid grid-cols-[1fr_180px_90px_130px_150px] items-center";
 
 function folderHref(id: string | null): string {
   return id === null ? "/" : `/folders/${id}`;
@@ -111,6 +111,7 @@ export function DesktopFiler({
           >
             <div>名前</div>
             <div>フォルダ</div>
+            <div>件数</div>
             <div>追加日</div>
             <div className="text-right">期限</div>
           </div>
@@ -127,7 +128,8 @@ export function DesktopFiler({
                 </span>
                 <span className="text-gray-400">—</span>
                 <span className="text-gray-500">{f.count}件</span>
-                <span />
+                <span className="text-gray-400">—</span>
+                <span className="text-right text-gray-400">—</span>
               </Link>
               <div className="absolute inset-y-0 right-3 flex items-center">
                 <FolderActionsMenu folder={{ id: f.id, name: f.name }} />
@@ -148,6 +150,7 @@ export function DesktopFiler({
               <span className="truncate text-[13px] text-gray-500">
                 {d.folderNames.length > 0 ? d.folderNames.join(" / ") : "未分類"}
               </span>
+              <span className="text-gray-400">—</span>
               <span className="text-gray-500">{formatDateJST(d.createdAt)}</span>
               <span className="text-right">
                 <ExpiryPill expiryDate={d.expiryDate} today={today} />

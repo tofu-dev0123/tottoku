@@ -65,14 +65,25 @@ async function attachFolderNames(docs: DocRow[]): Promise<FilerDocument[]> {
   return docs.map((d) => ({ ...d, folderNames: byDoc.get(d.id) ?? [] }));
 }
 
-// filer に並べる書類 + 所属フォルダ名。folderId 指定時はそのフォルダ直下、null で全書類。
+// filer に並べる書類 + 所属フォルダ名。ファイルシステムと同様に「その階層の直下」だけを返す。
+// folderId 指定時はそのフォルダ直下、null はルート直下(どのフォルダにも属さない=未分類)。
 export async function getFilerDocuments(folderId: string | null): Promise<FilerDocument[]> {
   const docs =
     folderId === null
       ? await db
           .select(docCols)
           .from(documents)
-          .where(isNull(documents.deletedAt))
+          .where(
+            and(
+              isNull(documents.deletedAt),
+              notExists(
+                db
+                  .select({ x: sql`1` })
+                  .from(documentFolders)
+                  .where(eq(documentFolders.documentId, documents.id)),
+              ),
+            ),
+          )
           .orderBy(desc(documents.createdAt))
       : await db
           .select(docCols)

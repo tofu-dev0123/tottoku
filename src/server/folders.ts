@@ -50,24 +50,42 @@ async function allFolderRows(): Promise<FolderRow[]> {
     .from(folders);
 }
 
-// 直下のフォルダ(+ 直下書類数)。parentId 省略時はトップ階層。
-export async function listFolders(parentId: string | null) {
-  return db
-    .select({
-      id: folders.id,
-      name: folders.name,
-      parentId: folders.parentId,
-      count: sql<number>`count(${documentFolders.documentId})::int`,
-    })
-    .from(folders)
-    .leftJoin(documentFolders, eq(documentFolders.folderId, folders.id))
-    .leftJoin(
+// 直下のフォルダ + 各フォルダの「サブツリー内の書類数」。
+// 件数は子孫フォルダのファイルも合算した distinct 件数(ファイルシステムの合計表示に合わせる)。
+// parentId 省略時はトップ階層。データ量が小さい家庭利用のため、ツリー集計はアプリ側で行う。
+export async function listFolders(
+  parentId: string | null,
+): Promise<{ id: string; name: string; parentId: string | null; count: number }[]> {
+  const all = await allFolderRows();
+  const children = all
+    .filter((f) => f.parentId === parentId)
+    .sort((a, b) => a.name.localeCompare(b.name, "ja"));
+  if (children.length === 0) return [];
+
+  // 論理削除を除いた 書類⇄フォルダ の紐付けを一括ロードし、フォルダ別の書類集合を作る。
+  const links = await db
+    .select({ documentId: documentFolders.documentId, folderId: documentFolders.folderId })
+    .from(documentFolders)
+    .innerJoin(
       documents,
       and(eq(documents.id, documentFolders.documentId), isNull(documents.deletedAt)),
-    )
-    .where(parentId === null ? isNull(folders.parentId) : eq(folders.parentId, parentId))
-    .groupBy(folders.id, folders.name, folders.parentId)
-    .orderBy(asc(folders.name));
+    );
+  const docsByFolder = new Map<string, Set<string>>();
+  for (const l of links) {
+    const set = docsByFolder.get(l.folderId) ?? new Set<string>();
+    set.add(l.documentId);
+    docsByFolder.set(l.folderId, set);
+  }
+
+  return children.map((f) => {
+    const subtree = collectDescendantIds(all, f.id);
+    subtree.add(f.id);
+    const docIds = new Set<string>();
+    for (const fid of subtree) {
+      for (const id of docsByFolder.get(fid) ?? []) docIds.add(id);
+    }
+    return { id: f.id, name: f.name, parentId: f.parentId, count: docIds.size };
+  });
 }
 
 export async function getFolderTree() {
