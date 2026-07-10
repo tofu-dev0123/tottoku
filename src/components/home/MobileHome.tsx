@@ -54,7 +54,7 @@ export function MobileHome({
                 <li key={d.id}>
                   <Link
                     href={`/documents/${d.id}`}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-3 ${
+                    className={`flex items-center gap-3 rounded-xl px-3 py-3 transition active:opacity-70 ${
                       urgent ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
                     }`}
                   >

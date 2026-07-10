@@ -3,7 +3,7 @@ import Link from "next/link";
 
 type Tab = "home" | "folders" | "notifications" | "settings";
 
-// 下部タブバー(モバイル)。未実装タブはリンク先だけ用意(後続で作成)。
+// 下部タブバー(モバイル)。通知/設定は準備中プレースホルダ(ComingSoon)へ遷移する。
 export function BottomNav({ active }: { active: Tab }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 mx-auto flex w-full max-w-md items-end justify-around border-t border-gray-200 bg-white px-2 pt-2 pb-2">
@@ -19,7 +19,10 @@ export function BottomNav({ active }: { active: Tab }) {
         icon={<Folder className="size-5" />}
         active={active === "folders"}
       />
-      <Link href="/documents/new" className="flex flex-col items-center text-gray-500">
+      <Link
+        href="/documents/new"
+        className="flex flex-col items-center text-gray-500 transition-transform active:scale-95"
+      >
         <span className="-mt-6 flex size-12 items-center justify-center rounded-full bg-blue-700 text-white shadow-md ring-4 ring-gray-50">
           <Camera className="size-6" />
         </span>
@@ -55,7 +58,7 @@ function NavItem({
   return (
     <Link
       href={href}
-      className={`flex flex-1 flex-col items-center gap-0.5 ${active ? "text-blue-700" : "text-gray-400"}`}
+      className={`flex flex-1 flex-col items-center gap-0.5 transition-opacity active:opacity-60 ${active ? "text-blue-700" : "text-gray-400"}`}
     >
       {icon}
       <span className="text-[10px]">{label}</span>

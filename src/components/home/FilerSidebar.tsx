@@ -111,7 +111,7 @@ function SideItem({
   return (
     <Link
       href={href}
-      className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm ${
+      className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors active:bg-gray-200 ${
         active ? "bg-blue-100 text-blue-800" : "text-gray-700 hover:bg-gray-200/60"
       }`}
     >

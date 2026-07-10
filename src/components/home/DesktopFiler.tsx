@@ -118,7 +118,7 @@ export function DesktopFiler({
             <div key={f.id} className="group relative">
               <Link
                 href={`/folders/${f.id}`}
-                className={`${GRID} border-b border-gray-100 px-5 py-2.5 hover:bg-gray-50`}
+                className={`${GRID} border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
               >
                 <span className="flex items-center gap-3">
                   <Folder className="size-5 text-blue-700" />
@@ -138,7 +138,7 @@ export function DesktopFiler({
             <Link
               key={d.id}
               href={`/documents/${d.id}`}
-              className={`${GRID} border-b border-gray-100 px-5 py-2.5 hover:bg-gray-50`}
+              className={`${GRID} border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
             >
               <span className="flex min-w-0 items-center gap-3">
                 <FileText className="size-5 shrink-0 text-gray-400" />
