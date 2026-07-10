@@ -27,6 +27,7 @@ export default async function FolderDetailPage({ params }: { params: Promise<{ i
         <DesktopFiler
           displayName={session?.user?.displayName ?? ""}
           email={session?.user?.email ?? null}
+          image={session?.user?.image ?? null}
           sidebarFolders={filer.sidebarFolders}
           counts={filer.counts}
           view={filer.view}

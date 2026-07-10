@@ -1,11 +1,27 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { signIn } from "next-auth/react";
+import { useState } from "react";
 
 // 画面0: ログイン。Google ログインのみ。allowlist で家族だけが入れる。
 // デザインは docs/screens.html の画面0 に準拠。
 export default function LoginPage() {
+  // Google へのリダイレクト待ちの間、ボタンに pending 表示を出し二重押しを防ぐ。
+  const [pending, setPending] = useState(false);
+
+  async function login() {
+    if (pending) return;
+    setPending(true);
+    try {
+      await signIn("google", { redirectTo: "/" });
+    } catch {
+      // リダイレクトに失敗したら再度押せるように戻す。
+      setPending(false);
+    }
+  }
+
   return (
     <main className="flex min-h-dvh items-center justify-center bg-gray-50 p-6">
       <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -28,11 +44,22 @@ export default function LoginPage() {
         <div className="px-7 pb-5">
           <button
             type="button"
-            onClick={() => signIn("google", { redirectTo: "/" })}
-            className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50"
+            onClick={login}
+            disabled={pending}
+            aria-busy={pending}
+            className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 disabled:cursor-wait disabled:opacity-70"
           >
-            <GoogleIcon />
-            Google でログイン
+            {pending ? (
+              <>
+                <Loader2 className="size-[18px] animate-spin text-gray-500" />
+                リダイレクト中…
+              </>
+            ) : (
+              <>
+                <GoogleIcon />
+                Google でログイン
+              </>
+            )}
           </button>
           <p className="mt-3.5 text-center text-[11px] leading-relaxed text-gray-400">
             登録された家族だけがログインできます

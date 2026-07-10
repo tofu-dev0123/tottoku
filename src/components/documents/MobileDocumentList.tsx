@@ -38,7 +38,7 @@ export function MobileDocumentList({
           <Link
             key={d.id}
             href={`/documents/${d.id}`}
-            className="flex items-center gap-3 border-b border-gray-100 py-3"
+            className="flex items-center gap-3 border-b border-gray-100 py-3 transition active:opacity-60"
           >
             <FileText className="size-6 shrink-0 text-gray-400" />
             <div className="min-w-0 flex-1">

@@ -43,7 +43,7 @@ export function MobileFolderView({ view }: { view: FilerView }) {
           <div key={f.id} className="relative">
             <Link
               href={`/folders/${f.id}`}
-              className="flex items-center gap-3 border-b border-gray-100 py-3 pr-9"
+              className="flex items-center gap-3 border-b border-gray-100 py-3 pr-9 transition active:opacity-60"
             >
               <Folder className="size-6 text-blue-700" />
               <div className="min-w-0 flex-1">
@@ -61,7 +61,7 @@ export function MobileFolderView({ view }: { view: FilerView }) {
           <Link
             key={d.id}
             href={`/documents/${d.id}`}
-            className="flex items-center gap-3 border-b border-gray-100 py-3"
+            className="flex items-center gap-3 border-b border-gray-100 py-3 transition active:opacity-60"
           >
             <FileText className="size-6 shrink-0 text-gray-400" />
             <div className="min-w-0 flex-1">

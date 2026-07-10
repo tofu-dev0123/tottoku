@@ -8,7 +8,7 @@ import { FilerSidebar } from "./FilerSidebar";
 import { FolderActionsMenu } from "./FolderActionsMenu";
 import { NewFolderButton } from "./NewFolderButton";
 
-const GRID = "grid grid-cols-[1fr_180px_130px_150px] items-center";
+const GRID = "grid grid-cols-[1fr_180px_90px_130px_150px] items-center";
 
 function folderHref(id: string | null): string {
   return id === null ? "/" : `/folders/${id}`;
@@ -17,12 +17,14 @@ function folderHref(id: string | null): string {
 export function DesktopFiler({
   displayName,
   email,
+  image,
   sidebarFolders,
   counts,
   view,
 }: {
   displayName: string;
   email: string | null;
+  image?: string | null;
   sidebarFolders: FilerFolder[];
   counts: FilerCounts;
   view: FilerView;
@@ -35,6 +37,7 @@ export function DesktopFiler({
       <FilerSidebar
         displayName={displayName}
         email={email}
+        image={image}
         sidebarFolders={sidebarFolders}
         counts={counts}
         activeKey={view.currentFolderId ?? "home"}
@@ -44,21 +47,22 @@ export function DesktopFiler({
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-2.5">
           <div className="flex text-gray-400">
-            <span className="flex size-7 items-center justify-center rounded-md">
-              <ChevronLeft className="size-4" />
-            </span>
             {parent ? (
               <Link
                 href={folderHref(parent.id)}
+                aria-label="一つ上のフォルダへ戻る"
                 className="flex size-7 items-center justify-center rounded-md text-gray-700 hover:bg-gray-100"
               >
-                <ChevronRight className="size-4" />
+                <ChevronLeft className="size-4" />
               </Link>
             ) : (
               <span className="flex size-7 items-center justify-center rounded-md">
-                <ChevronRight className="size-4" />
+                <ChevronLeft className="size-4" />
               </span>
             )}
+            <span className="flex size-7 items-center justify-center rounded-md">
+              <ChevronRight className="size-4" />
+            </span>
           </div>
           <nav className="flex items-center gap-1 text-[15px] font-semibold">
             {view.breadcrumb.map((b, i) => {
@@ -110,6 +114,7 @@ export function DesktopFiler({
           >
             <div>名前</div>
             <div>フォルダ</div>
+            <div>件数</div>
             <div>追加日</div>
             <div className="text-right">期限</div>
           </div>
@@ -118,7 +123,7 @@ export function DesktopFiler({
             <div key={f.id} className="group relative">
               <Link
                 href={`/folders/${f.id}`}
-                className={`${GRID} border-b border-gray-100 px-5 py-2.5 hover:bg-gray-50`}
+                className={`${GRID} border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
               >
                 <span className="flex items-center gap-3">
                   <Folder className="size-5 text-blue-700" />
@@ -126,7 +131,8 @@ export function DesktopFiler({
                 </span>
                 <span className="text-gray-400">—</span>
                 <span className="text-gray-500">{f.count}件</span>
-                <span />
+                <span className="text-gray-400">—</span>
+                <span className="text-right text-gray-400">—</span>
               </Link>
               <div className="absolute inset-y-0 right-3 flex items-center">
                 <FolderActionsMenu folder={{ id: f.id, name: f.name }} />
@@ -138,7 +144,7 @@ export function DesktopFiler({
             <Link
               key={d.id}
               href={`/documents/${d.id}`}
-              className={`${GRID} border-b border-gray-100 px-5 py-2.5 hover:bg-gray-50`}
+              className={`${GRID} border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
             >
               <span className="flex min-w-0 items-center gap-3">
                 <FileText className="size-5 shrink-0 text-gray-400" />
@@ -147,6 +153,7 @@ export function DesktopFiler({
               <span className="truncate text-[13px] text-gray-500">
                 {d.folderNames.length > 0 ? d.folderNames.join(" / ") : "未分類"}
               </span>
+              <span className="text-gray-400">—</span>
               <span className="text-gray-500">{formatDateJST(d.createdAt)}</span>
               <span className="text-right">
                 <ExpiryPill expiryDate={d.expiryDate} today={today} />

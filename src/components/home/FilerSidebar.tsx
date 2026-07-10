@@ -1,6 +1,7 @@
-import { Clock, Folder, History, Home, Inbox, User } from "lucide-react";
+import { Clock, Folder, History, Home, Inbox } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Avatar } from "@/components/Avatar";
 import type { FilerCounts, FilerFolder } from "@/server/filer";
 import { LogoutButton } from "./LogoutButton";
 
@@ -11,12 +12,14 @@ export type SidebarKey = "home" | "expiring" | "unclassified" | "recent" | (stri
 export function FilerSidebar({
   displayName,
   email,
+  image,
   sidebarFolders,
   counts,
   activeKey,
 }: {
   displayName: string;
   email: string | null;
+  image?: string | null;
   sidebarFolders: FilerFolder[];
   counts: FilerCounts;
   activeKey: SidebarKey;
@@ -79,9 +82,13 @@ export function FilerSidebar({
 
       <div className="mt-auto border-t border-gray-200 pt-2">
         <div className="flex items-center gap-2 px-2 py-1.5">
-          <span className="flex size-7 items-center justify-center rounded-full bg-blue-100 text-blue-700">
-            <User className="size-4" />
-          </span>
+          <Avatar
+            image={image}
+            name={displayName}
+            px={28}
+            sizeClassName="size-7"
+            iconClassName="size-4"
+          />
           <div className="min-w-0">
             <p className="truncate text-xs font-medium">{displayName || "ユーザー"}</p>
             {email && <p className="truncate text-[11px] text-gray-400">{email}</p>}
@@ -111,7 +118,7 @@ function SideItem({
   return (
     <Link
       href={href}
-      className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm ${
+      className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors active:bg-gray-200 ${
         active ? "bg-blue-100 text-blue-800" : "text-gray-700 hover:bg-gray-200/60"
       }`}
     >

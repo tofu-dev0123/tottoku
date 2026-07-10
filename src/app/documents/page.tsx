@@ -56,6 +56,7 @@ export default async function DocumentsPage({
         <DesktopDocumentList
           displayName={session?.user?.displayName ?? ""}
           email={session?.user?.email ?? null}
+          image={session?.user?.image ?? null}
           sidebarFolders={sidebarFolders}
           counts={counts}
           activeKey={activeKey}
