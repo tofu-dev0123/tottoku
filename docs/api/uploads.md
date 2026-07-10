@@ -15,9 +15,13 @@
 ```json
 {
   "filename": "契約書.pdf",
-  "mime_type": "application/pdf"
+  "mime_type": "application/pdf",
+  "size": 1048576
 }
 ```
+
+- `mime_type` は許可リスト（PDF / JPEG / PNG / HEIC / WebP）に限定。範囲外は **400**。
+- `size` はファイルのバイト数。上限 **25MB** を超えると **400**。署名に `Content-Type` / `Content-Length` を束縛するため、クライアントは同じ MIME・サイズで PUT する必要がある（偽装・サイズ超過は S3 が拒否）。
 
 **Response**
 

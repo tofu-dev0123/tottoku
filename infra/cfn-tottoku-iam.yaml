@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Tottoku: IAM role assumed by Vercel via OIDC (AssumeRoleWithWebIdentity) to
+  issue presigned S3 URLs. Deploy once per environment (Environment=prod / dev).
+  Requires cfn-tottoku-oidc.yaml and cfn-tottoku-s3.yaml to be deployed first.
+  The role only grants PutObject/GetObject on this environment's documents/*.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+    Description: Deployment environment. Selects bucket and trusted Vercel environment claims.
+  TeamSlug:
+    Type: String
+    Default: tofus-projects-8c78d865
+    Description: Vercel team/account slug (used in the trust policy condition values).
+  ProjectName:
+    Type: String
+    Default: tottoku
+    Description: Vercel project name (the project:<name> part of the sub claim).
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, prod]
+
+Resources:
+  PresignRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "tottoku-presign-${Environment}"
+      # 信頼ポリシー: Vercel OIDC プロバイダからの AssumeRoleWithWebIdentity のみ許可。
+      # 条件キー(oidc.vercel.com/<slug>:aud / :sub)はテンプレートで動的展開できないため slug をハードコードしている。
+      # slug を変える場合はキー名も直すこと。
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub "arn:aws:iam::${AWS::AccountId}:oidc-provider/oidc.vercel.com/${TeamSlug}"
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition: !If # prod: production 環境のみ完全一致で許可。
+              - IsProd
+              - StringEquals:
+                  "oidc.vercel.com/tofus-projects-8c78d865:aud": !Sub "https://vercel.com/${TeamSlug}"
+                  "oidc.vercel.com/tofus-projects-8c78d865:sub": !Sub "owner:${TeamSlug}:project:${ProjectName}:environment:production"
+              # dev: ローカル(vercel env pull は development クレーム)とプレビューを許可。
+              - StringEquals:
+                  "oidc.vercel.com/tofus-projects-8c78d865:aud": !Sub "https://vercel.com/${TeamSlug}"
+                StringLike:
+                  "oidc.vercel.com/tofus-projects-8c78d865:sub":
+                    - !Sub "owner:${TeamSlug}:project:${ProjectName}:environment:development"
+                    - !Sub "owner:${TeamSlug}:project:${ProjectName}:environment:preview"
+      Policies:
+        - PolicyName: presign-documents
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # presign する PUT/GET のみ。対象は当該環境バケットの documents/ 配下に限定。
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource: !Sub "arn:aws:s3:::tottoku-documents-${Environment}/documents/*"
+
+Outputs:
+  RoleArn:
+    Description: ARN to set as AWS_ROLE_ARN in the matching Vercel environment.
+    Value: !GetAtt PresignRole.Arn
+    Export:
+      Name: !Sub "tottoku-presign-role-arn-${Environment}"
