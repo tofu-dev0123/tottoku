@@ -1,18 +1,8 @@
 import "server-only";
 import { z } from "zod";
 import { buildDocumentKey, presignUpload } from "@/lib/s3";
-
-// 受け入れる MIME 形式(書類=PDF + 写真)。増やすときは lib/s3.ts の MIME_EXT も合わせる。
-export const ALLOWED_MIME_TYPES = [
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/heic",
-  "image/webp",
-] as const;
-
-// 1ファイルの上限(25MB)。事故防止のガードレール。PDF/写真は通常これに十分収まる。
-export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+// MIME 許可リスト・サイズ上限はクライアント UI と共有する定数モジュールに集約。
+import { ALLOWED_MIME_TYPES, MAX_UPLOAD_BYTES } from "@/lib/upload-constraints";
 
 export const presignSchema = z.object({
   filename: z.string().trim().min(1).max(255),

@@ -22,7 +22,7 @@ import { db } from "@/db/client";
 import { documentFolders, documentTags, documents, folders, tags, users } from "@/db/schema";
 import { addDays, todayInJST } from "@/lib/date";
 import { HttpError } from "@/lib/errors";
-import { ALLOWED_MIME_TYPES } from "@/server/uploads";
+import { ALLOWED_MIME_TYPES } from "@/lib/upload-constraints";
 
 // ---- スキーマ(コロケーション) --------------------------------------------
 

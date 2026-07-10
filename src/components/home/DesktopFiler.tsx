@@ -173,7 +173,11 @@ export function DesktopFiler({
           </div>
           <NewFolderButton parentId={view.currentFolderId} />
           <Link
-            href="/documents/new"
+            href={
+              view.currentFolderId
+                ? `/documents/new?folder_id=${view.currentFolderId}`
+                : "/documents/new"
+            }
             className="flex items-center gap-1.5 rounded-lg bg-blue-700 px-3 py-2 text-[13px] font-semibold text-white"
           >
             <Upload className="size-4" />
