@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Tottoku: IAM OpenID Connect provider for Vercel OIDC federation.
+  Only one is needed per AWS account, so deploy this stack once and share it
+  across prod/dev. The roles themselves are created in cfn-tottoku-iam.yaml.
+
+Parameters:
+  TeamSlug:
+    Type: String
+    Default: tofus-projects-8c78d865
+    Description: Vercel team/account slug. Used in the issuer URL and audience.
+
+Resources:
+  # Vercel の OIDC プロバイダ。issuer は team モードの https://oidc.vercel.com/<slug>。
+  # audience(ClientId) は既定の https://vercel.com/<slug> を使う(コード側でカスタム audience を指定しない)。
+  # ThumbprintList は省略可(AWS が信頼済み CA ストアで検証・自動取得する)。
+  VercelOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: !Sub "https://oidc.vercel.com/${TeamSlug}"
+      ClientIdList:
+        - !Sub "https://vercel.com/${TeamSlug}"
+
+Outputs:
+  ProviderArn:
+    Description: ARN of the created OIDC provider.
+    Value: !Ref VercelOidcProvider
+    Export:
+      Name: tottoku-vercel-oidc-provider-arn

@@ -45,3 +45,6 @@ jobs:
           AUTH_GOOGLE_SECRET: ci-dummy
           AUTH_ALLOWED_EMAILS: ci@example.com
           DATABASE_URL: postgresql://user:pass@localhost:5432/tottoku
+          AWS_REGION: ap-northeast-1
+          AWS_ROLE_ARN: arn:aws:iam::000000000000:role/ci-dummy
+          S3_BUCKET: ci-dummy-bucket

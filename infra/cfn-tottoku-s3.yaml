@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Tottoku: private S3 bucket for document files. Deploy once per environment
+  (Environment=prod / dev). Public access is fully blocked; files are reached
+  only via short-lived presigned URLs. Browser uploads/downloads go directly
+  to S3, so CORS is required.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+    Description: Deployment environment. Selects the bucket name and CORS origins.
+  ProdOrigin:
+    Type: String
+    Default: https://tottoku.tofubase.com
+    Description: Production site origin allowed by CORS (prod only).
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, prod]
+
+Resources:
+  DocumentsBucket:
+    Type: AWS::S3::Bucket
+    # 誤削除を防ぐため保持。中身がある状態でのスタック削除でも消さない。
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "tottoku-documents-${Environment}"
+      # パブリックアクセス全ブロック(設計書 §3・厳守)。
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      # 保存時暗号化(SSE-S3 / AES256)。presign 側で暗号化ヘッダを要求しなくても既定で暗号化される。
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      # ブラウザ↔S3 直結(presign PUT / GET)のため CORS 必須。
+      # prod は本番ドメインのみ、dev はローカルと Vercel プレビューを許可。
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods:
+              - PUT
+              - GET
+              - HEAD
+            AllowedOrigins: !If
+              - IsProd
+              - - !Ref ProdOrigin
+              - - http://localhost:3000
+                - https://*.vercel.app
+            AllowedHeaders:
+              - "*"
+            ExposedHeaders:
+              - ETag
+            MaxAge: 3000
+      LifecycleConfiguration:
+        Rules:
+          # 中断したマルチパートアップロードの残骸を掃除する。
+          - Id: abort-incomplete-multipart
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+
+Outputs:
+  BucketName:
+    Description: Name of the documents bucket.
+    Value: !Ref DocumentsBucket
+    Export:
+      Name: !Sub "tottoku-documents-bucket-${Environment}"
+  BucketArn:
+    Description: ARN of the documents bucket.
+    Value: !GetAtt DocumentsBucket.Arn
+    Export:
+      Name: !Sub "tottoku-documents-bucket-arn-${Environment}"
