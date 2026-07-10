@@ -1,0 +1,35 @@
+name: Mirror production to main
+
+# production(本番ブランチ)へマージされたら、そのコミットを main(ミラーブランチ)へ反映する。
+# main は production の内容をそのまま追従するだけのブランチで、直接コミットしない前提。
+on:
+  push:
+    branches: [production]
+
+concurrency:
+  # 連続 push でも順番に処理し、途中でキャンセルしない。
+  group: mirror-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fast-forward main to production
+        run: |
+          # production の HEAD をそのまま main へ反映する(fast-forward のみ)。
+          # main が production の履歴から外れている場合は非 fast-forward で失敗し、手動確認を促す。
+          if git push origin "${{ github.sha }}:refs/heads/main"; then
+            echo "main を production (${GITHUB_SHA}) に同期しました。"
+          else
+            echo "::error::main への fast-forward に失敗しました。main が production から分岐している可能性があります。手動で確認してください。"
+            exit 1
+          fi
