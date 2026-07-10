@@ -1,9 +1,15 @@
 import "server-only";
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db/client";
 import { documentFolders, documents, folders } from "@/db/schema";
-import { buildBreadcrumb, buildTree, canMove, type FolderRow } from "@/lib/folder-tree";
+import {
+  buildBreadcrumb,
+  buildTree,
+  canMove,
+  collectDescendantIds,
+  type FolderRow,
+} from "@/lib/folder-tree";
 import { HttpError } from "@/lib/errors";
 
 // リクエスト検証スキーマ(コロケーション)
@@ -136,6 +142,29 @@ export async function updateFolder(id: string, input: z.infer<typeof updateFolde
     if (isUniqueViolation(e)) throw new HttpError(409, "同じ場所に同名のフォルダがあります");
     throw e;
   }
+}
+
+// 削除の影響(read 専用)。UI の確認ダイアログ用:
+//   descendantFolderCount … CASCADE で一緒に消える子孫フォルダ数(自分は除く)
+//   documentCount         … サブツリー内で紐付けが解除される書類数(distinct・論理削除は除く)。
+//                           書類本体は消えず、他フォルダに属さなくなったものが「未分類」になる。
+export async function getFolderDeletionImpact(id: string) {
+  const all = await allFolderRows();
+  if (!all.some((f) => f.id === id)) throw new HttpError(404, "フォルダが見つかりません");
+
+  const descendantIds = collectDescendantIds(all, id);
+  const subtreeIds = [id, ...descendantIds];
+
+  const [row] = await db
+    .select({ c: sql<number>`count(distinct ${documentFolders.documentId})::int` })
+    .from(documentFolders)
+    .innerJoin(
+      documents,
+      and(eq(documents.id, documentFolders.documentId), isNull(documents.deletedAt)),
+    )
+    .where(inArray(documentFolders.folderId, subtreeIds));
+
+  return { descendantFolderCount: descendantIds.size, documentCount: row?.c ?? 0 };
 }
 
 // 削除(子は CASCADE、document_folders も CASCADE。書類本体は残る)。

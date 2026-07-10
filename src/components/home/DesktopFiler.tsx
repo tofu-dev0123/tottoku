@@ -17,6 +17,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { daysUntil, formatDateJST, todayInJST } from "@/lib/date";
 import type { FilerCounts, FilerFolder, FilerView } from "@/server/filer";
+import { FolderActionsMenu } from "./FolderActionsMenu";
 import { LogoutButton } from "./LogoutButton";
 import { NewFolderButton } from "./NewFolderButton";
 
@@ -144,6 +145,16 @@ export function DesktopFiler({
               );
             })}
           </nav>
+          {view.currentFolderId && (
+            <FolderActionsMenu
+              variant="header"
+              folder={{
+                id: view.currentFolderId,
+                name: view.breadcrumb[view.breadcrumb.length - 1].name,
+              }}
+              redirectTo={folderHref(parent?.id ?? null)}
+            />
+          )}
           <div className="flex-1" />
           <Link
             href="/search"
@@ -182,19 +193,23 @@ export function DesktopFiler({
           </div>
 
           {view.folders.map((f) => (
-            <Link
-              key={f.id}
-              href={`/folders/${f.id}`}
-              className={`${GRID} border-b border-gray-100 px-5 py-2.5 hover:bg-gray-50`}
-            >
-              <span className="flex items-center gap-3">
-                <Folder className="size-5 text-blue-700" />
-                <span className="font-medium">{f.name}</span>
-              </span>
-              <span className="text-gray-400">—</span>
-              <span className="text-gray-500">{f.count}件</span>
-              <span className="text-right text-gray-400">—</span>
-            </Link>
+            <div key={f.id} className="group relative">
+              <Link
+                href={`/folders/${f.id}`}
+                className={`${GRID} border-b border-gray-100 px-5 py-2.5 hover:bg-gray-50`}
+              >
+                <span className="flex items-center gap-3">
+                  <Folder className="size-5 text-blue-700" />
+                  <span className="font-medium">{f.name}</span>
+                </span>
+                <span className="text-gray-400">—</span>
+                <span className="text-gray-500">{f.count}件</span>
+                <span />
+              </Link>
+              <div className="absolute inset-y-0 right-3 flex items-center">
+                <FolderActionsMenu folder={{ id: f.id, name: f.name }} />
+              </div>
+            </div>
           ))}
 
           {view.documents.map((d) => (
