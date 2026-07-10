@@ -1,5 +1,6 @@
-import { AlertCircle, ChevronRight, Clock, Search, User } from "lucide-react";
+import { AlertCircle, ChevronRight, Clock, User } from "lucide-react";
 import Link from "next/link";
+import { SearchBox } from "@/components/documents/SearchBox";
 import { BottomNav } from "@/components/BottomNav";
 import { daysUntil, todayInJST } from "@/lib/date";
 import type { ExpiringDocument } from "@/server/dashboard";
@@ -29,13 +30,7 @@ export function MobileHome({
       </header>
 
       <div className="px-5">
-        <Link
-          href="/search"
-          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-3 text-gray-400"
-        >
-          <Search className="size-4" />
-          <span className="text-sm">書類を検索(例: 自動車保険)</span>
-        </Link>
+        <SearchBox className="w-full py-3" />
       </div>
 
       <section className="px-5 pt-5">
