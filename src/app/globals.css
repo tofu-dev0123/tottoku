@@ -24,3 +24,14 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Tailwind v4 は preflight から button の cursor:pointer を外したため、
+   クリック可能要素に明示的にポインタを付ける(PC でのホバー時の押せる感)。 */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  label[for],
+  summary {
+    cursor: pointer;
+  }
+}

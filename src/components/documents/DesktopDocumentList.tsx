@@ -12,6 +12,7 @@ const GRID = "grid grid-cols-[1fr_180px_130px_150px] items-center";
 export function DesktopDocumentList({
   displayName,
   email,
+  image,
   sidebarFolders,
   counts,
   activeKey,
@@ -22,6 +23,7 @@ export function DesktopDocumentList({
 }: {
   displayName: string;
   email: string | null;
+  image?: string | null;
   sidebarFolders: FilerFolder[];
   counts: FilerCounts;
   activeKey: SidebarKey;
@@ -38,6 +40,7 @@ export function DesktopDocumentList({
       <FilerSidebar
         displayName={displayName}
         email={email}
+        image={image}
         sidebarFolders={sidebarFolders}
         counts={counts}
         activeKey={activeKey}
@@ -71,7 +74,7 @@ export function DesktopDocumentList({
             <Link
               key={d.id}
               href={`/documents/${d.id}`}
-              className={`${GRID} border-b border-gray-100 px-5 py-2.5 hover:bg-gray-50`}
+              className={`${GRID} border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
             >
               <span className="flex min-w-0 items-center gap-3">
                 <FileText className="size-5 shrink-0 text-gray-400" />
