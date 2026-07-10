@@ -13,16 +13,18 @@ export default async function HomePage() {
   ]);
   const displayName = session?.user?.displayName ?? "";
   const email = session?.user?.email ?? null;
+  const image = session?.user?.image ?? null;
 
   return (
     <>
       <div className="md:hidden">
-        <MobileHome displayName={displayName} docs={expiring} />
+        <MobileHome displayName={displayName} image={image} docs={expiring} />
       </div>
       <div className="hidden md:block">
         <DesktopFiler
           displayName={displayName}
           email={email}
+          image={image}
           sidebarFolders={filer.sidebarFolders}
           counts={filer.counts}
           view={filer.view}

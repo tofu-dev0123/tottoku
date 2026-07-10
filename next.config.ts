@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    // Google アカウントのプロフィール画像(lh3.googleusercontent.com 等)を next/image で表示するため許可。
+    remotePatterns: [{ protocol: "https", hostname: "*.googleusercontent.com" }],
+  },
   experimental: {
     // クライアント Router Cache の再利用時間(秒)。
     // 再遷移・戻る/進む時にサーバー(Neon)へ再クエリせずキャッシュを使う。

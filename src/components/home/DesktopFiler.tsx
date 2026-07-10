@@ -17,12 +17,14 @@ function folderHref(id: string | null): string {
 export function DesktopFiler({
   displayName,
   email,
+  image,
   sidebarFolders,
   counts,
   view,
 }: {
   displayName: string;
   email: string | null;
+  image?: string | null;
   sidebarFolders: FilerFolder[];
   counts: FilerCounts;
   view: FilerView;
@@ -35,6 +37,7 @@ export function DesktopFiler({
       <FilerSidebar
         displayName={displayName}
         email={email}
+        image={image}
         sidebarFolders={sidebarFolders}
         counts={counts}
         activeKey={view.currentFolderId ?? "home"}

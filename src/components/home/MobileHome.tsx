@@ -1,5 +1,6 @@
-import { AlertCircle, ChevronRight, Clock, User } from "lucide-react";
+import { AlertCircle, ChevronRight, Clock } from "lucide-react";
 import Link from "next/link";
+import { Avatar } from "@/components/Avatar";
 import { SearchBox } from "@/components/documents/SearchBox";
 import { BottomNav } from "@/components/BottomNav";
 import { daysUntil, todayInJST } from "@/lib/date";
@@ -8,9 +9,11 @@ import type { ExpiringDocument } from "@/server/dashboard";
 // モバイルのホーム(画面1)。期限が近い書類 + 検索窓。PC は DesktopFiler を使う。
 export function MobileHome({
   displayName,
+  image,
   docs,
 }: {
   displayName: string;
+  image?: string | null;
   docs: ExpiringDocument[];
 }) {
   const today = todayInJST();
@@ -21,12 +24,13 @@ export function MobileHome({
           <p className="text-[13px] text-gray-500">おかえりなさい</p>
           <p className="mt-0.5 text-lg font-medium">わが家の書類</p>
         </div>
-        <div
-          className="flex size-9 items-center justify-center rounded-full bg-blue-100 text-blue-700"
-          title={displayName}
-        >
-          <User className="size-5" />
-        </div>
+        <Avatar
+          image={image}
+          name={displayName}
+          px={36}
+          sizeClassName="size-9"
+          iconClassName="size-5"
+        />
       </header>
 
       <div className="px-5">

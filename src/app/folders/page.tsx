@@ -16,6 +16,7 @@ export default async function FoldersPage() {
         <DesktopFiler
           displayName={session?.user?.displayName ?? ""}
           email={session?.user?.email ?? null}
+          image={session?.user?.image ?? null}
           sidebarFolders={filer.sidebarFolders}
           counts={filer.counts}
           view={filer.view}

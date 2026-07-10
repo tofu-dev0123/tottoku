@@ -12,6 +12,7 @@ const GRID = "grid grid-cols-[1fr_180px_130px_150px] items-center";
 export function DesktopDocumentList({
   displayName,
   email,
+  image,
   sidebarFolders,
   counts,
   activeKey,
@@ -22,6 +23,7 @@ export function DesktopDocumentList({
 }: {
   displayName: string;
   email: string | null;
+  image?: string | null;
   sidebarFolders: FilerFolder[];
   counts: FilerCounts;
   activeKey: SidebarKey;
@@ -38,6 +40,7 @@ export function DesktopDocumentList({
       <FilerSidebar
         displayName={displayName}
         email={email}
+        image={image}
         sidebarFolders={sidebarFolders}
         counts={counts}
         activeKey={activeKey}
