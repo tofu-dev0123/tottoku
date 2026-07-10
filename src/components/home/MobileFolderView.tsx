@@ -1,8 +1,9 @@
-import { ChevronLeft, ChevronRight, FileText, Folder, Layers } from "lucide-react";
+import { ChevronLeft, FileText, Folder, Layers } from "lucide-react";
 import Link from "next/link";
 import { BottomNav } from "@/components/BottomNav";
 import { formatDateJST } from "@/lib/date";
 import type { FilerView } from "@/server/filer";
+import { FolderActionsMenu } from "./FolderActionsMenu";
 import { NewFolderButton } from "./NewFolderButton";
 
 function folderHref(id: string | null): string {
@@ -25,22 +26,35 @@ export function MobileFolderView({ view }: { view: FilerView }) {
           <Folder className="size-5 text-blue-700" />
         )}
         <p className="truncate text-sm font-medium">{current.name}</p>
+        {view.currentFolderId && (
+          <>
+            <div className="flex-1" />
+            <FolderActionsMenu
+              variant="header"
+              folder={{ id: view.currentFolderId, name: current.name }}
+              redirectTo={folderHref(parent?.id ?? null)}
+            />
+          </>
+        )}
       </header>
 
       <div className="flex-1 px-4 py-2">
         {view.folders.map((f) => (
-          <Link
-            key={f.id}
-            href={`/folders/${f.id}`}
-            className="flex items-center gap-3 border-b border-gray-100 py-3"
-          >
-            <Folder className="size-6 text-blue-700" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{f.name}</p>
-              <p className="text-[11px] text-gray-400">{f.count}件</p>
+          <div key={f.id} className="relative">
+            <Link
+              href={`/folders/${f.id}`}
+              className="flex items-center gap-3 border-b border-gray-100 py-3 pr-9"
+            >
+              <Folder className="size-6 text-blue-700" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{f.name}</p>
+                <p className="text-[11px] text-gray-400">{f.count}件</p>
+              </div>
+            </Link>
+            <div className="absolute inset-y-0 right-0 flex items-center">
+              <FolderActionsMenu folder={{ id: f.id, name: f.name }} />
             </div>
-            <ChevronRight className="size-4 text-gray-400" />
-          </Link>
+          </div>
         ))}
 
         {view.documents.map((d) => (
