@@ -1,0 +1,43 @@
+name: DB Drift Check
+
+# PR で schema.ts と生成済みマイグレーション(drizzle/)の不整合を検知する。
+# DB へは接続・適用しない(drizzle-kit generate は接続不要)。
+on:
+  pull_request:
+    branches: [develop, main]
+
+concurrency:
+  group: db-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate migrations from schema
+        run: pnpm db:generate
+
+      - name: Fail if schema drifted from committed migrations
+        run: |
+          if [ -n "$(git status --porcelain drizzle)" ]; then
+            echo "::error::schema.ts と生成済みマイグレーションに差分があります。ローカルで pnpm db:generate を実行し drizzle/ をコミットしてください。"
+            git status --porcelain drizzle
+            git --no-pager diff -- drizzle
+            exit 1
+          fi
+          echo "No drift: schema.ts と drizzle/ は一致しています。"
