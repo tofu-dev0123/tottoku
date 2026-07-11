@@ -11,8 +11,8 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const isLoggedIn = !!req.auth?.user;
 
-  // Auth.js 自身のエンドポイントとログインページは素通し
-  if (pathname.startsWith("/api/auth") || pathname === "/login") {
+  // Auth.js 自身のエンドポイント・ログインページ・公開ランディングページ(/lp)は素通し
+  if (pathname.startsWith("/api/auth") || pathname === "/login" || pathname.startsWith("/lp")) {
     return;
   }
 
