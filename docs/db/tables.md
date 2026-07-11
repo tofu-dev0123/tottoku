@@ -51,15 +51,15 @@
 - `ocr_text` / `search_tsv` は第2フェーズで追加（[indexes.md](./indexes.md)）。
 - 「対象者(person)」専用カラムは持たない。フォルダ or タグ（例「長男」「妻」）で表現する。
 
-## document_folders — 書類⇄フォルダ（多対多）
+## document_folders — 書類⇄フォルダ（所属テーブル）
 
 | カラム | 型 | 制約 | 説明 |
 |---|---|---|---|
 | document_id | uuid | NOT NULL, FK → documents(id) ON DELETE CASCADE | |
 | folder_id | uuid | NOT NULL, FK → folders(id) ON DELETE CASCADE | |
 
-- 複合主キー `PRIMARY KEY (document_id, folder_id)` で重複所属を防止。
-- 「1 書類を複数フォルダに入れる」の実体。
+- 複合主キー `PRIMARY KEY (document_id, folder_id)`。構造は多対多だが**アプリ層で 1書類=最大1行**に制約（[invariants.md](./invariants.md)）。
+- 1行も無い書類が「未分類」。
 
 ## tags / document_tags — タグ（多対多）
 

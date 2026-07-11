@@ -1,8 +1,9 @@
-import { ChevronLeft, FileText, Folder, Layers } from "lucide-react";
+import { ChevronLeft, FileText, Folder } from "lucide-react";
 import Link from "next/link";
 import { BottomNav } from "@/components/BottomNav";
 import { formatDateJST } from "@/lib/date";
 import type { FilerView } from "@/server/filer";
+import { DocumentActionsMenu } from "./DocumentActionsMenu";
 import { FolderActionsMenu } from "./FolderActionsMenu";
 import { NewFolderButton } from "./NewFolderButton";
 
@@ -58,25 +59,23 @@ export function MobileFolderView({ view }: { view: FilerView }) {
         ))}
 
         {view.documents.map((d) => (
-          <Link
-            key={d.id}
-            href={`/documents/${d.id}`}
-            className="flex items-center gap-3 border-b border-gray-100 py-3 transition active:opacity-60"
-          >
-            <FileText className="size-6 shrink-0 text-gray-400" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm">{d.title}</p>
-              <div className="mt-0.5 flex items-center gap-2">
-                <span className="text-[11px] text-gray-400">{formatDateJST(d.createdAt)}</span>
-                {d.folderNames.length > 1 && (
-                  <span className="inline-flex items-center gap-0.5 rounded bg-teal-50 px-1.5 text-[10px] text-teal-700">
-                    <Layers className="size-3" />
-                    {d.folderNames.length}
-                  </span>
-                )}
+          <div key={d.id} className="relative">
+            <Link
+              href={`/documents/${d.id}`}
+              className="flex items-center gap-3 border-b border-gray-100 py-3 pr-9 transition active:opacity-60"
+            >
+              <FileText className="size-6 shrink-0 text-gray-400" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm">{d.title}</p>
+                <span className="mt-0.5 block text-[11px] text-gray-400">
+                  {formatDateJST(d.createdAt)}
+                </span>
               </div>
+            </Link>
+            <div className="absolute inset-y-0 right-0 flex items-center">
+              <DocumentActionsMenu doc={{ id: d.id, title: d.title }} />
             </div>
-          </Link>
+          </div>
         ))}
 
         {view.folders.length === 0 && view.documents.length === 0 && (

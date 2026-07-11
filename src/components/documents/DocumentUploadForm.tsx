@@ -11,7 +11,7 @@ import {
   MAX_UPLOAD_TOTAL_BYTES,
   UPLOAD_ACCEPT,
 } from "@/lib/upload-constraints";
-import { FolderMultiSelect, type FolderOption } from "./FolderMultiSelect";
+import { FolderSelect, type FolderOption } from "./FolderSelect";
 import { TagsInput } from "./TagsInput";
 
 function stripExt(filename: string): string {
@@ -35,7 +35,7 @@ type Entry = {
   docDate: string;
   expiryDate: string;
   memo: string;
-  folderIds: string[];
+  folderId: string | null;
   tags: string[];
   status: EntryStatus;
   error?: string;
@@ -74,9 +74,7 @@ export function DocumentUploadForm({
 
   const [entries, setEntries] = useState<Entry[]>([]);
   // 共通設定(全ファイルに適用)。新規追加ファイルの初期値にも使う。
-  const [commonFolderIds, setCommonFolderIds] = useState<string[]>(
-    preselectFolderId ? [preselectFolderId] : [],
-  );
+  const [commonFolderId, setCommonFolderId] = useState<string | null>(preselectFolderId ?? null);
   const [commonTags, setCommonTags] = useState<string[]>([]);
   const [commonExpiry, setCommonExpiry] = useState("");
 
@@ -102,7 +100,7 @@ export function DocumentUploadForm({
       docDate: "",
       expiryDate: commonExpiry,
       memo: "",
-      folderIds: [...commonFolderIds],
+      folderId: commonFolderId,
       tags: [...commonTags],
       ...initialStatus(file),
     }));
@@ -122,7 +120,7 @@ export function DocumentUploadForm({
           ? e
           : {
               ...e,
-              folderIds: [...commonFolderIds],
+              folderId: commonFolderId,
               tags: [...commonTags],
               expiryDate: commonExpiry,
             },
@@ -241,7 +239,7 @@ export function DocumentUploadForm({
             doc_date: u.entry.docDate || null,
             expiry_date: u.entry.expiryDate || null,
             memo: u.entry.memo.trim() || null,
-            folder_ids: u.entry.folderIds,
+            folder_ids: u.entry.folderId ? [u.entry.folderId] : [],
             tags: u.entry.tags,
           })),
         }),
@@ -352,10 +350,10 @@ export function DocumentUploadForm({
                 />
               </Field>
               <Field label="フォルダ">
-                <FolderMultiSelect
+                <FolderSelect
                   options={folderOptions}
-                  value={commonFolderIds}
-                  onChange={setCommonFolderIds}
+                  value={commonFolderId}
+                  onChange={setCommonFolderId}
                 />
               </Field>
               <Field label="タグ">
@@ -474,10 +472,10 @@ function EntryCard({
           </div>
 
           <Field label="フォルダ">
-            <FolderMultiSelect
+            <FolderSelect
               options={folderOptions}
-              value={entry.folderIds}
-              onChange={(folderIds) => onChange({ folderIds })}
+              value={entry.folderId}
+              onChange={(folderId) => onChange({ folderId })}
             />
           </Field>
 
