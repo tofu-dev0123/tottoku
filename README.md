@@ -224,3 +224,7 @@ pnpm db:studio      # Drizzle Studio
 - ファイル実体は Vercel の関数を通さず、クライアント↔S3 を直結（presign → PUT / 短命の GET URL）。
 - IAM 認証情報・DB URL・認証シークレットは環境変数（Vercel）のみに置き、コードに埋め込まない。`.env*` はコミット禁止（`.env.example` のみ）。
 - 認証は allowlist で家族のメールのみ許可。一般公開はしない。
+
+## ライセンス
+
+[MIT License](./LICENSE)
