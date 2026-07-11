@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatDateJST } from "@/lib/date";
-import { FolderMultiSelect, type FolderOption } from "./FolderMultiSelect";
+import { FolderSelect, type FolderOption } from "./FolderSelect";
 import { TagsInput } from "./TagsInput";
 
 export type DocumentDetailData = {
@@ -47,7 +47,7 @@ export function DocumentDetail({
   const [docDate, setDocDate] = useState(doc.doc_date ?? "");
   const [expiryDate, setExpiryDate] = useState(doc.expiry_date ?? "");
   const [memo, setMemo] = useState(doc.memo ?? "");
-  const [folderIds, setFolderIds] = useState<string[]>(doc.folders.map((f) => f.id));
+  const [folderId, setFolderId] = useState<string | null>(doc.folders[0]?.id ?? null);
   const [tags, setTags] = useState<string[]>(doc.tags);
 
   function resetEdit() {
@@ -55,7 +55,7 @@ export function DocumentDetail({
     setDocDate(doc.doc_date ?? "");
     setExpiryDate(doc.expiry_date ?? "");
     setMemo(doc.memo ?? "");
-    setFolderIds(doc.folders.map((f) => f.id));
+    setFolderId(doc.folders[0]?.id ?? null);
     setTags(doc.tags);
     setError(null);
   }
@@ -84,7 +84,7 @@ export function DocumentDetail({
         doc_date: docDate || null,
         expiry_date: expiryDate || null,
         memo: memo.trim() || null,
-        folder_ids: folderIds,
+        folder_ids: folderId ? [folderId] : [],
         tags,
       }),
     });
@@ -182,7 +182,7 @@ export function DocumentDetail({
             </Field>
           </div>
           <Field label="フォルダ">
-            <FolderMultiSelect options={folderOptions} value={folderIds} onChange={setFolderIds} />
+            <FolderSelect options={folderOptions} value={folderId} onChange={setFolderId} />
           </Field>
           <Field label="タグ">
             <TagsInput value={tags} onChange={setTags} />

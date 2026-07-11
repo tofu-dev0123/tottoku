@@ -4,11 +4,12 @@ import { ExpiryPill } from "@/components/documents/ExpiryPill";
 import { SearchBox } from "@/components/documents/SearchBox";
 import { formatDateJST, todayInJST } from "@/lib/date";
 import type { FilerCounts, FilerFolder, FilerView } from "@/server/filer";
+import { DocumentActionsMenu } from "./DocumentActionsMenu";
 import { FilerSidebar } from "./FilerSidebar";
 import { FolderActionsMenu } from "./FolderActionsMenu";
 import { NewFolderButton } from "./NewFolderButton";
 
-const GRID = "grid grid-cols-[1fr_180px_90px_130px_150px] items-center";
+const GRID = "grid grid-cols-[1fr_180px_90px_130px_150px_44px] items-center";
 
 function folderHref(id: string | null): string {
   return id === null ? "/" : `/folders/${id}`;
@@ -117,48 +118,53 @@ export function DesktopFiler({
             <div>件数</div>
             <div>追加日</div>
             <div className="text-right">期限</div>
+            <div />
           </div>
 
           {view.folders.map((f) => (
-            <div key={f.id} className="group relative">
-              <Link
-                href={`/folders/${f.id}`}
-                className={`${GRID} border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
-              >
-                <span className="flex items-center gap-3">
-                  <Folder className="size-5 text-blue-700" />
-                  <span className="font-medium">{f.name}</span>
-                </span>
-                <span className="text-gray-400">—</span>
-                <span className="text-gray-500">{f.count}件</span>
-                <span className="text-gray-400">—</span>
-                <span className="text-right text-gray-400">—</span>
-              </Link>
-              <div className="absolute inset-y-0 right-3 flex items-center">
+            <div
+              key={f.id}
+              className={`${GRID} group relative border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
+            >
+              <Link href={`/folders/${f.id}`} aria-label={f.name} className="absolute inset-0" />
+              <span className="pointer-events-none flex items-center gap-3">
+                <Folder className="size-5 text-blue-700" />
+                <span className="font-medium">{f.name}</span>
+              </span>
+              <span className="pointer-events-none text-gray-400">—</span>
+              <span className="pointer-events-none text-gray-500">{f.count}件</span>
+              <span className="pointer-events-none text-gray-400">—</span>
+              <span className="pointer-events-none text-right text-gray-400">—</span>
+              <div className="relative flex items-center justify-end">
                 <FolderActionsMenu folder={{ id: f.id, name: f.name }} />
               </div>
             </div>
           ))}
 
           {view.documents.map((d) => (
-            <Link
+            <div
               key={d.id}
-              href={`/documents/${d.id}`}
-              className={`${GRID} border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
+              className={`${GRID} group relative border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
             >
-              <span className="flex min-w-0 items-center gap-3">
+              <Link href={`/documents/${d.id}`} aria-label={d.title} className="absolute inset-0" />
+              <span className="pointer-events-none flex min-w-0 items-center gap-3">
                 <FileText className="size-5 shrink-0 text-gray-400" />
                 <span className="truncate font-medium">{d.title}</span>
               </span>
-              <span className="truncate text-[13px] text-gray-500">
+              <span className="pointer-events-none truncate text-[13px] text-gray-500">
                 {d.folderNames.length > 0 ? d.folderNames.join(" / ") : "未分類"}
               </span>
-              <span className="text-gray-400">—</span>
-              <span className="text-gray-500">{formatDateJST(d.createdAt)}</span>
-              <span className="text-right">
+              <span className="pointer-events-none text-gray-400">—</span>
+              <span className="pointer-events-none text-gray-500">
+                {formatDateJST(d.createdAt)}
+              </span>
+              <span className="pointer-events-none text-right">
                 <ExpiryPill expiryDate={d.expiryDate} today={today} />
               </span>
-            </Link>
+              <div className="relative flex items-center justify-end">
+                <DocumentActionsMenu doc={{ id: d.id, title: d.title }} />
+              </div>
+            </div>
           ))}
 
           {view.folders.length === 0 && view.documents.length === 0 && (

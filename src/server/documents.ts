@@ -22,13 +22,14 @@ import { db } from "@/db/client";
 import { documentFolders, documentTags, documents, folders, tags, users } from "@/db/schema";
 import { addDays, todayInJST } from "@/lib/date";
 import { HttpError } from "@/lib/errors";
-import { ALLOWED_MIME_TYPES } from "@/lib/upload-constraints";
+import { ALLOWED_MIME_TYPES, MAX_UPLOAD_COUNT } from "@/lib/upload-constraints";
 
 // ---- スキーマ(コロケーション) --------------------------------------------
 
 const zDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で指定してください");
 const zTags = z.array(z.string().trim().min(1).max(50));
-const zFolderIds = z.array(z.string().uuid());
+// 1書類=1フォルダ(アプリ上の不変条件)。DB は多対多だが所属は最大1件に制約する。
+const zFolderIds = z.array(z.string().uuid()).max(1, "書類が所属できるフォルダは1つだけです");
 
 export const createDocumentSchema = z.object({
   title: z.string().trim().min(1, "タイトルは必須です").max(200),
@@ -39,6 +40,11 @@ export const createDocumentSchema = z.object({
   memo: z.string().max(2000).nullable().optional(),
   folder_ids: zFolderIds.optional(),
   tags: zTags.optional(),
+});
+
+// 複数書類をまとめて登録するバッチ入力。各要素は単一登録と同じ形。
+export const createDocumentsSchema = z.object({
+  documents: z.array(createDocumentSchema).min(1, "登録対象がありません").max(MAX_UPLOAD_COUNT),
 });
 
 export const updateDocumentSchema = z
@@ -75,6 +81,7 @@ export const listQuerySchema = z.object({
 });
 
 export type CreateDocumentInput = z.infer<typeof createDocumentSchema>;
+export type CreateDocumentsInput = z.infer<typeof createDocumentsSchema>;
 export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>;
 export type ListQuery = z.infer<typeof listQuerySchema>;
 
@@ -358,6 +365,24 @@ export async function createDocument(input: CreateDocumentInput, userId: string)
   }
 
   return getDocumentDetail(id);
+}
+
+// 複数書類をベストエフォートで登録する。1件失敗しても他は登録し、
+// 入力と同じ順序で 1 件ごとの成否を返す(部分成功を許容)。
+export async function createDocuments(input: CreateDocumentsInput, userId: string) {
+  const results = await Promise.all(
+    input.documents.map(async (doc, index) => {
+      try {
+        const created = await createDocument(doc, userId);
+        return { index, status: "ok" as const, document: created };
+      } catch (e) {
+        const message = e instanceof HttpError ? e.message : "登録に失敗しました";
+        if (!(e instanceof HttpError)) console.error(e);
+        return { index, status: "error" as const, error: message };
+      }
+    }),
+  );
+  return { results };
 }
 
 export async function updateDocument(id: string, input: UpdateDocumentInput, userId: string) {
