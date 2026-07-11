@@ -153,7 +153,7 @@ pnpm db:migrate               # 未適用のマイグレーションを適用
 pnpm dev                      # http://localhost:3000
 ```
 
-- **アプリ本体（`pnpm dev`）はローカル docker DB には繋がりません。** ランタイムの Neon HTTP ドライバは Neon のエンドポイント前提のため、`DATABASE_URL` には Neon の dev ブランチを指定してください（docker はマイグレーション適用とテスト専用）。
+- アプリ本体（`pnpm dev`）の DB 接続先は、**環境変数 `DB_DRIVER` によって**切り替わります（`src/db/client.ts`）。ローカルの docker PostgreSQL に直結するなら **環境変数 `DB_DRIVER=pg`** と docker の `DATABASE_URL` を指定します。Neon に繋ぐ場合は **環境変数 `DB_DRIVER=neon`（既定）** と Neon の接続 URL を指定します。
 - S3 へのアクセスはローカルでも実 S3 を使います。`vercel env pull .env.local` で `VERCEL_OIDC_TOKEN` を取得すると、OIDC 経由で IAM ロールを assume できます。
 
 ### 7. デプロイ（Vercel）
