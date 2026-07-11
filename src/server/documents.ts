@@ -28,7 +28,8 @@ import { ALLOWED_MIME_TYPES, MAX_UPLOAD_COUNT } from "@/lib/upload-constraints";
 
 const zDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "日付は YYYY-MM-DD 形式で指定してください");
 const zTags = z.array(z.string().trim().min(1).max(50));
-const zFolderIds = z.array(z.string().uuid());
+// 1書類=1フォルダ(アプリ上の不変条件)。DB は多対多だが所属は最大1件に制約する。
+const zFolderIds = z.array(z.string().uuid()).max(1, "書類が所属できるフォルダは1つだけです");
 
 export const createDocumentSchema = z.object({
   title: z.string().trim().min(1, "タイトルは必須です").max(200),

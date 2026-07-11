@@ -1,9 +1,10 @@
 "use client";
 
-import { FileText, MoreVertical, Trash2 } from "lucide-react";
+import { FileText, FolderInput, MoreVertical, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
+import { MoveDialog } from "./MoveDialog";
 
 // 書類行のケバブメニュー(詳細/削除)。FolderActionsMenu と同方針:
 // 自前モーダル + fetch + router.refresh()、トーストは使わずインラインでエラー表示。
@@ -11,8 +12,24 @@ export function DocumentActionsMenu({ doc }: { doc: { id: string; title: string 
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // 移動先フォルダへ folder_ids を全置換(1書類=1フォルダ)。未分類は空配列。
+  async function moveTo(targetId: string | null): Promise<string | null> {
+    const res = await fetch(`/api/documents/${doc.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ folder_ids: targetId ? [targetId] : [] }),
+    });
+    if (res.ok) {
+      router.refresh();
+      return null;
+    }
+    const body = await res.json().catch(() => ({}));
+    return body.error ?? "移動に失敗しました";
+  }
 
   function close() {
     if (busy) return;
@@ -69,6 +86,17 @@ export function DocumentActionsMenu({ doc }: { doc: { id: string; title: string 
               type="button"
               onClick={() => {
                 setMenuOpen(false);
+                setMoving(true);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-50"
+            >
+              <FolderInput className="size-4 text-gray-500" />
+              移動
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
                 setError(null);
                 setConfirmDelete(true);
               }}
@@ -79,6 +107,15 @@ export function DocumentActionsMenu({ doc }: { doc: { id: string; title: string 
             </button>
           </div>
         </>
+      )}
+
+      {moving && (
+        <MoveDialog
+          title={`「${doc.title}」を移動`}
+          rootLabel="未分類"
+          onSubmit={moveTo}
+          onClose={() => setMoving(false)}
+        />
       )}
 
       {confirmDelete && (

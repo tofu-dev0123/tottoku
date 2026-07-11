@@ -1,8 +1,9 @@
 "use client";
 
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { FolderInput, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
+import { MoveDialog } from "./MoveDialog";
 
 type Impact = { descendantFolderCount: number; documentCount: number };
 
@@ -20,7 +21,7 @@ export function FolderActionsMenu({
 }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mode, setMode] = useState<"rename" | "delete" | null>(null);
+  const [mode, setMode] = useState<"rename" | "move" | "delete" | null>(null);
   const [name, setName] = useState(folder.name);
   const [impact, setImpact] = useState<Impact | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +38,27 @@ export function FolderActionsMenu({
     setName(folder.name);
     setError(null);
     setMode("rename");
+  }
+
+  function openMove() {
+    setMenuOpen(false);
+    setError(null);
+    setMode("move");
+  }
+
+  // 移動先へ parent_id を更新。循環参照はサーバ側 canMove が弾く(候補からも除外済み)。
+  async function moveTo(targetId: string | null): Promise<string | null> {
+    const res = await fetch(`/api/folders/${folder.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ parent_id: targetId }),
+    });
+    if (res.ok) {
+      router.refresh();
+      return null;
+    }
+    const body = await res.json().catch(() => ({}));
+    return body.error ?? "移動に失敗しました";
   }
 
   async function openDelete() {
@@ -128,6 +150,14 @@ export function FolderActionsMenu({
             </button>
             <button
               type="button"
+              onClick={openMove}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-50"
+            >
+              <FolderInput className="size-4 text-gray-500" />
+              移動
+            </button>
+            <button
+              type="button"
               onClick={openDelete}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-red-600 hover:bg-red-50"
             >
@@ -162,6 +192,16 @@ export function FolderActionsMenu({
             </button>
           </ModalActions>
         </Modal>
+      )}
+
+      {mode === "move" && (
+        <MoveDialog
+          title={`「${folder.name}」を移動`}
+          rootLabel="トップ（最上位）"
+          excludeSubtreeOf={folder.id}
+          onSubmit={moveTo}
+          onClose={() => setMode(null)}
+        />
       )}
 
       {mode === "delete" && (
