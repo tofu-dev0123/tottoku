@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { toErrorResponse } from "@/lib/errors";
 import { requireUser } from "@/lib/session";
 import {
-  createDocument,
-  createDocumentSchema,
+  createDocuments,
+  createDocumentsSchema,
   listDocuments,
   listQuerySchema,
 } from "@/server/documents";
@@ -30,12 +30,13 @@ export async function GET(req: Request) {
   }
 }
 
-// POST /api/documents — メタデータ登録(S3 へ上げた後)
+// POST /api/documents — メタデータの一括登録(S3 へ上げた後)。
+// 部分成功を許容し、1 件ごとの成否を results で返す。
 export async function POST(req: Request) {
   const user = await requireUser();
   if (user instanceof NextResponse) return user;
 
-  const parsed = createDocumentSchema.safeParse(await req.json().catch(() => null));
+  const parsed = createDocumentsSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? "invalid" },
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
     );
   }
   try {
-    return NextResponse.json(await createDocument(parsed.data, user.id), { status: 201 });
+    return NextResponse.json(await createDocuments(parsed.data, user.id));
   } catch (e) {
     return toErrorResponse(e);
   }

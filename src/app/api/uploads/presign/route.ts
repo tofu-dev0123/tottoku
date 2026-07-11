@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { toErrorResponse } from "@/lib/errors";
 import { requireUser } from "@/lib/session";
-import { createUploadUrl, presignSchema } from "@/server/uploads";
+import { createUploadUrls, presignSchema } from "@/server/uploads";
 
-// POST /api/uploads/presign — アップロード用の署名付き PUT URL と s3_key を発行
+// POST /api/uploads/presign — 複数ファイル分の署名付き PUT URL と s3_key を発行
 export async function POST(req: Request) {
   const user = await requireUser();
   if (user instanceof NextResponse) return user;
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     );
   }
   try {
-    return NextResponse.json(await createUploadUrl(parsed.data));
+    return NextResponse.json(await createUploadUrls(parsed.data));
   } catch (e) {
     return toErrorResponse(e);
   }

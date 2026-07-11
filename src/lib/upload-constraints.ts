@@ -13,6 +13,12 @@ export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
 // 1ファイルの上限(25MB)。事故防止のガードレール。
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
+// 一度にまとめて登録できる件数の上限。
+export const MAX_UPLOAD_COUNT = 20;
+
+// 一度の登録で扱える合計サイズの上限(200MB)。
+export const MAX_UPLOAD_TOTAL_BYTES = 200 * 1024 * 1024;
+
 // <input type="file" accept> 用。
 export const UPLOAD_ACCEPT = ALLOWED_MIME_TYPES.join(",");
 
