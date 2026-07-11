@@ -3,7 +3,7 @@ import Link from "next/link";
 
 type Tab = "home" | "folders" | "notifications" | "settings";
 
-// 下部タブバー(モバイル)。通知/設定は準備中プレースホルダ(ComingSoon)へ遷移する。
+// 下部タブバー(モバイル)。ホーム/フォルダ/追加/通知/設定へ遷移する。
 export function BottomNav({ active }: { active: Tab }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 mx-auto flex w-full max-w-md items-end justify-around border-t border-gray-200 bg-white px-2 pt-2 pb-2">
