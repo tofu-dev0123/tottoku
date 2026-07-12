@@ -274,8 +274,8 @@ export function DocumentUploadForm({
     setBusy(false);
 
     if (!hadFailure) {
-      // 全件成功 → 一覧へ。
-      router.push("/");
+      // 全件成功 → 保存先フォルダへ(共通設定でフォルダ選択時)、未選択ならホームへ。
+      router.push(commonFolderId ? `/folders/${commonFolderId}` : "/");
       router.refresh();
     } else {
       setError("一部の登録に失敗しました。失敗した書類はそのまま再実行できます。");
