@@ -1,9 +1,11 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, FileText, Loader2, Upload, X } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, FileText, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { AppLink, useAppRouter } from "@/components/home/AppLink";
+import { enqueueUploads } from "@/components/home/upload-queue";
+import { bootstrapQueryKey } from "@/lib/bootstrap-query";
 import {
   isAllowedMimeType,
   MAX_UPLOAD_BYTES,
@@ -25,9 +27,10 @@ function formatBytes(n: number): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-type EntryStatus = "pending" | "uploading" | "uploaded" | "creating" | "done" | "error";
+// 入力の検証状態(転送・登録の状態はアップロードキュー側で持つ)
+type EntryStatus = "pending" | "error";
 
-// 1ファイル = 1書類ぶんの入力とアップロード状態。メタはファイルごとに個別に持つ。
+// 1ファイル = 1書類ぶんの入力。メタはファイルごとに個別に持つ。
 type Entry = {
   key: string;
   file: File;
@@ -39,7 +42,6 @@ type Entry = {
   tags: string[];
   status: EntryStatus;
   error?: string;
-  s3Key?: string;
 };
 
 function initialStatus(file: File): { status: EntryStatus; error?: string } {
@@ -50,18 +52,9 @@ function initialStatus(file: File): { status: EntryStatus; error?: string } {
   return { status: "pending" };
 }
 
-const STATUS_LABEL: Record<EntryStatus, string> = {
-  pending: "待機",
-  uploading: "アップロード中",
-  uploaded: "アップロード済み",
-  creating: "登録中",
-  done: "完了",
-  error: "失敗",
-};
-
-// 書類の一括アップロード。複数ファイルを選び、ファイルごとにメタを入力して
-// バッチ presign → S3 へ各ファイル直 PUT → バッチ登録(POST /api/documents) を行う。
-// 一部が失敗しても成功分は登録し、失敗分はフォームに残してリトライできる。
+// 書類の一括アップロード。複数ファイルを選び、ファイルごとにメタを入力して「登録」すると
+// アップロードキューに積んで即座に保存先へ移る(presign → S3 直 PUT → 登録は裏で進む)。
+// 失敗した書類は一覧・アップロード状況から再試行/破棄できる。
 export function DocumentUploadForm({
   folderOptions,
   preselectFolderId,
@@ -69,7 +62,8 @@ export function DocumentUploadForm({
   folderOptions: FolderOption[];
   preselectFolderId?: string | null;
 }) {
-  const router = useRouter();
+  const appRouter = useAppRouter();
+  const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -78,13 +72,11 @@ export function DocumentUploadForm({
   const [commonTags, setCommonTags] = useState<string[]>([]);
   const [commonExpiry, setCommonExpiry] = useState("");
 
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const totalBytes = entries.reduce((sum, e) => sum + e.file.size, 0);
   const overCount = entries.length > MAX_UPLOAD_COUNT;
   const overSize = totalBytes > MAX_UPLOAD_TOTAL_BYTES;
-  const pendingCount = entries.filter((e) => e.status !== "done").length;
 
   function patch(key: string, partial: Partial<Entry>) {
     setEntries((prev) => prev.map((e) => (e.key === key ? { ...e, ...partial } : e)));
@@ -112,19 +104,15 @@ export function DocumentUploadForm({
     setEntries((prev) => prev.filter((e) => e.key !== key));
   }
 
-  // 共通設定を全ファイルへ反映(完了済みは触らない)。
+  // 共通設定を全ファイルへ反映。
   function applyCommon() {
     setEntries((prev) =>
-      prev.map((e) =>
-        e.status === "done"
-          ? e
-          : {
-              ...e,
-              folderId: commonFolderId,
-              tags: [...commonTags],
-              expiryDate: commonExpiry,
-            },
-      ),
+      prev.map((e) => ({
+        ...e,
+        folderId: commonFolderId,
+        tags: [...commonTags],
+        expiryDate: commonExpiry,
+      })),
     );
   }
 
@@ -136,8 +124,7 @@ export function DocumentUploadForm({
     return null;
   }
 
-  async function submit() {
-    if (busy) return;
+  function submit() {
     setError(null);
 
     if (entries.length === 0) return setError("ファイルを選択してください");
@@ -145,12 +132,8 @@ export function DocumentUploadForm({
     if (overSize)
       return setError(`合計サイズが大きすぎます(上限 ${formatBytes(MAX_UPLOAD_TOTAL_BYTES)})`);
 
-    // 完了済みを除いた対象を検証。
-    const targets = entries.filter((e) => e.status !== "done");
-    if (targets.length === 0) return;
-
     let invalid = false;
-    for (const e of targets) {
+    for (const e of entries) {
       const msg = validateEntry(e);
       if (msg) {
         patch(e.key, { status: "error", error: msg });
@@ -159,135 +142,32 @@ export function DocumentUploadForm({
     }
     if (invalid) return setError("入力に不備があります。各ファイルの内容を確認してください");
 
-    setBusy(true);
-    let hadFailure = false;
-
-    // 既に S3 へ上がっているもの(前回の部分失敗など)は再アップロードせず登録だけやり直す。
-    const uploaded: { key: string; s3Key: string; entry: Entry }[] = targets
-      .filter((e) => e.s3Key)
-      .map((e) => ({ key: e.key, s3Key: e.s3Key as string, entry: e }));
-
-    // --- フェーズ1: バッチ presign → 各ファイルを S3 へ直 PUT ---
-    const needUpload = targets.filter((e) => !e.s3Key);
-    if (needUpload.length > 0) {
-      setEntries((prev) =>
-        prev.map((e) =>
-          needUpload.some((n) => n.key === e.key)
-            ? { ...e, status: "uploading", error: undefined }
-            : e,
-        ),
-      );
-
-      const presignRes = await fetch("/api/uploads/presign", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          files: needUpload.map((e) => ({
-            filename: e.file.name,
-            mime_type: e.file.type,
-            size: e.file.size,
-          })),
-        }),
-      });
-
-      if (!presignRes.ok) {
-        const b = await presignRes.json().catch(() => ({}));
-        const msg = b.error ?? "アップロードURLの取得に失敗しました";
-        setEntries((prev) =>
-          prev.map((e) =>
-            needUpload.some((n) => n.key === e.key) ? { ...e, status: "error", error: msg } : e,
-          ),
-        );
-        hadFailure = true;
-      } else {
-        const { results } = await presignRes.json();
-        await Promise.all(
-          needUpload.map(async (e, i) => {
-            const r = results[i] as { upload_url: string; s3_key: string };
-            try {
-              const putRes = await fetch(r.upload_url, {
-                method: "PUT",
-                headers: { "Content-Type": e.file.type },
-                body: e.file,
-              });
-              if (!putRes.ok) throw new Error();
-              patch(e.key, { status: "uploaded", s3Key: r.s3_key, error: undefined });
-              uploaded.push({ key: e.key, s3Key: r.s3_key, entry: e });
-            } catch {
-              patch(e.key, { status: "error", error: "ファイルのアップロードに失敗しました" });
-              hadFailure = true;
-            }
-          }),
-        );
-      }
-    }
-
-    // --- フェーズ2: アップロード成功分をバッチ登録 ---
-    if (uploaded.length > 0) {
-      setEntries((prev) =>
-        prev.map((e) => (uploaded.some((u) => u.key === e.key) ? { ...e, status: "creating" } : e)),
-      );
-
-      const createRes = await fetch("/api/documents", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          documents: uploaded.map((u) => ({
-            title: u.entry.title.trim(),
-            s3_key: u.s3Key,
-            mime_type: u.entry.file.type,
-            doc_date: u.entry.docDate || null,
-            expiry_date: u.entry.expiryDate || null,
-            memo: u.entry.memo.trim() || null,
-            folder_ids: u.entry.folderId ? [u.entry.folderId] : [],
-            tags: u.entry.tags,
-          })),
-        }),
-      });
-
-      if (!createRes.ok) {
-        const b = await createRes.json().catch(() => ({}));
-        const msg = b.error ?? "登録に失敗しました";
-        setEntries((prev) =>
-          prev.map((e) =>
-            uploaded.some((u) => u.key === e.key) ? { ...e, status: "error", error: msg } : e,
-          ),
-        );
-        hadFailure = true;
-      } else {
-        const { results } = (await createRes.json()) as {
-          results: { index: number; status: "ok" | "error"; error?: string }[];
-        };
-        for (const res of results) {
-          const u = uploaded[res.index];
-          if (!u) continue;
-          if (res.status === "ok") {
-            patch(u.key, { status: "done", error: undefined });
-          } else {
-            patch(u.key, { status: "error", error: res.error ?? "登録に失敗しました" });
-            hadFailure = true;
-          }
-        }
-      }
-    }
-
-    setBusy(false);
-
-    if (!hadFailure) {
-      // 全件成功 → 保存先フォルダへ(共通設定でフォルダ選択時)、未選択ならホームへ。
-      router.push(commonFolderId ? `/folders/${commonFolderId}` : "/");
-      router.refresh();
-    } else {
-      setError("一部の登録に失敗しました。失敗した書類はそのまま再実行できます。");
-    }
+    // キューに積んで即座に画面を離れる。転送・登録は裏で進み、一覧に「アップロード中」行が出る。
+    enqueueUploads(
+      entries.map((e) => ({
+        id: crypto.randomUUID(),
+        file: e.file,
+        meta: {
+          title: e.title.trim(),
+          docDate: e.docDate || null,
+          expiryDate: e.expiryDate || null,
+          memo: e.memo.trim() || null,
+          folderId: e.folderId,
+          tags: e.tags,
+        },
+      })),
+      () => queryClient.invalidateQueries({ queryKey: bootstrapQueryKey }),
+    );
+    // 保存先フォルダへ(共通設定でフォルダ選択時)、未選択ならホームへ。
+    appRouter.push(commonFolderId ? `/folders/${commonFolderId}` : "/");
   }
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
       <div className="mb-4 flex items-center gap-3">
-        <Link href="/" className="text-sm text-gray-500 hover:text-gray-900">
+        <AppLink href="/" className="text-sm text-gray-500 hover:text-gray-900">
           キャンセル
-        </Link>
+        </AppLink>
         <h1 className="text-lg font-semibold">書類を追加</h1>
       </div>
 
@@ -303,8 +183,7 @@ export function DocumentUploadForm({
       <button
         type="button"
         onClick={() => fileRef.current?.click()}
-        disabled={busy}
-        className="flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-white py-8 text-gray-500 hover:border-blue-400 hover:text-blue-700 disabled:opacity-50"
+        className="flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-white py-8 text-gray-500 hover:border-blue-400 hover:text-blue-700"
       >
         <Upload className="size-7" />
         <span className="text-sm font-medium">
@@ -334,8 +213,7 @@ export function DocumentUploadForm({
               <button
                 type="button"
                 onClick={applyCommon}
-                disabled={busy}
-                className="rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                className="rounded-md border border-gray-300 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100"
               >
                 全ファイルに適用
               </button>
@@ -369,7 +247,6 @@ export function DocumentUploadForm({
                 key={e.key}
                 entry={e}
                 folderOptions={folderOptions}
-                busy={busy}
                 onChange={(partial) => patch(e.key, partial)}
                 onRemove={() => removeEntry(e.key)}
               />
@@ -381,19 +258,13 @@ export function DocumentUploadForm({
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
       <div className="mt-6 flex items-center justify-end gap-3">
-        {busy && (
-          <span className="flex items-center gap-1.5 text-sm text-gray-500">
-            <Loader2 className="size-4 animate-spin" />
-            登録処理中…
-          </span>
-        )}
         <button
           type="button"
           onClick={submit}
-          disabled={busy || pendingCount === 0 || overCount || overSize}
+          disabled={entries.length === 0 || overCount || overSize}
           className="rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {pendingCount > 0 ? `${pendingCount} 件を登録` : "登録"}
+          {entries.length > 0 ? `${entries.length} 件を登録` : "登録"}
         </button>
       </div>
     </div>
@@ -403,17 +274,14 @@ export function DocumentUploadForm({
 function EntryCard({
   entry,
   folderOptions,
-  busy,
   onChange,
   onRemove,
 }: {
   entry: Entry;
   folderOptions: FolderOption[];
-  busy: boolean;
   onChange: (partial: Partial<Entry>) => void;
   onRemove: () => void;
 }) {
-  const locked = busy || entry.status === "done";
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-3">
       <div className="flex items-center gap-3">
@@ -423,108 +291,81 @@ function EntryCard({
           <p className="text-xs text-gray-400">{formatBytes(entry.file.size)}</p>
         </div>
         <StatusBadge status={entry.status} />
-        {entry.status !== "done" && (
-          <button
-            type="button"
-            aria-label="ファイルを外す"
-            onClick={onRemove}
-            disabled={busy}
-            className="flex size-8 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 disabled:opacity-50"
-          >
-            <X className="size-4" />
-          </button>
-        )}
+        <button
+          type="button"
+          aria-label="ファイルを外す"
+          onClick={onRemove}
+          className="flex size-8 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100"
+        >
+          <X className="size-4" />
+        </button>
       </div>
 
       {entry.error && <p className="mt-2 text-xs text-red-600">{entry.error}</p>}
 
-      {entry.status !== "done" && (
-        <div className="mt-3 space-y-3 border-t border-gray-100 pt-3">
-          <Field label="タイトル" required>
+      <div className="mt-3 space-y-3 border-t border-gray-100 pt-3">
+        <Field label="タイトル" required>
+          <input
+            value={entry.title}
+            onChange={(e) => onChange({ title: e.target.value })}
+            placeholder="例: 自動車保険 契約更新のご案内"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50"
+          />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="書類の日付">
             <input
-              value={entry.title}
-              onChange={(e) => onChange({ title: e.target.value })}
-              disabled={locked}
-              placeholder="例: 自動車保険 契約更新のご案内"
+              type="date"
+              value={entry.docDate}
+              onChange={(e) => onChange({ docDate: e.target.value })}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50"
             />
           </Field>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="書類の日付">
-              <input
-                type="date"
-                value={entry.docDate}
-                onChange={(e) => onChange({ docDate: e.target.value })}
-                disabled={locked}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50"
-              />
-            </Field>
-            <Field label="期限">
-              <input
-                type="date"
-                value={entry.expiryDate}
-                onChange={(e) => onChange({ expiryDate: e.target.value })}
-                disabled={locked}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50"
-              />
-            </Field>
-          </div>
-
-          <Field label="フォルダ">
-            <FolderSelect
-              options={folderOptions}
-              value={entry.folderId}
-              onChange={(folderId) => onChange({ folderId })}
-            />
-          </Field>
-
-          <Field label="タグ">
-            <TagsInput value={entry.tags} onChange={(tags) => onChange({ tags })} />
-          </Field>
-
-          <Field label="メモ">
-            <textarea
-              value={entry.memo}
-              onChange={(e) => onChange({ memo: e.target.value })}
-              disabled={locked}
-              rows={2}
-              placeholder="任意"
-              className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50"
+          <Field label="期限">
+            <input
+              type="date"
+              value={entry.expiryDate}
+              onChange={(e) => onChange({ expiryDate: e.target.value })}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50"
             />
           </Field>
         </div>
-      )}
+
+        <Field label="フォルダ">
+          <FolderSelect
+            options={folderOptions}
+            value={entry.folderId}
+            onChange={(folderId) => onChange({ folderId })}
+          />
+        </Field>
+
+        <Field label="タグ">
+          <TagsInput value={entry.tags} onChange={(tags) => onChange({ tags })} />
+        </Field>
+
+        <Field label="メモ">
+          <textarea
+            value={entry.memo}
+            onChange={(e) => onChange({ memo: e.target.value })}
+            rows={2}
+            placeholder="任意"
+            className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:bg-gray-50"
+          />
+        </Field>
+      </div>
     </div>
   );
 }
 
 function StatusBadge({ status }: { status: EntryStatus }) {
-  if (status === "done") {
-    return (
-      <span className="flex items-center gap-1 text-xs font-medium text-green-600">
-        <CheckCircle2 className="size-4" />
-        {STATUS_LABEL.done}
-      </span>
-    );
-  }
-  if (status === "error") {
-    return (
-      <span className="flex items-center gap-1 text-xs font-medium text-red-600">
-        <AlertCircle className="size-4" />
-        {STATUS_LABEL.error}
-      </span>
-    );
-  }
-  if (status === "uploading" || status === "creating") {
-    return (
-      <span className="flex items-center gap-1 text-xs text-gray-500">
-        <Loader2 className="size-4 animate-spin" />
-        {STATUS_LABEL[status]}
-      </span>
-    );
-  }
-  return null;
+  if (status !== "error") return null;
+  return (
+    <span className="flex items-center gap-1 text-xs font-medium text-red-600">
+      <AlertCircle className="size-4" />
+      要確認
+    </span>
+  );
 }
 
 function Field({

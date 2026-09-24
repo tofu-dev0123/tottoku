@@ -4,6 +4,7 @@ import { FileQuestion } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { DesktopDocumentList } from "@/components/documents/DesktopDocumentList";
 import { DocumentDetail } from "@/components/documents/DocumentDetail";
+import { DocumentUploadForm } from "@/components/documents/DocumentUploadForm";
 import { MobileDocumentList } from "@/components/documents/MobileDocumentList";
 import { todayInJST } from "@/lib/date";
 import {
@@ -23,6 +24,7 @@ import { FilerSidebar } from "./FilerSidebar";
 import { type FilerUser, FilerUserProvider } from "./FilerUserProvider";
 import { MobileFolderView } from "./MobileFolderView";
 import { MobileHome } from "./MobileHome";
+import { UploadIndicator } from "./UploadIndicator";
 import { useBootstrap } from "./use-bootstrap";
 
 // (filer) の画面本体。サイドバーとクライアント描画ルート(ホーム/フォルダ/書類一覧/書類詳細/検索)は
@@ -37,19 +39,34 @@ export function FilerApp({ user, children }: { user: FilerUser; children: React.
   // 遷移ごとに再マウントしてスクロール位置・編集/メニュー状態をリセットする
   const screenKey = `${pathname}?${searchParams.toString()}`;
 
-  // 書類詳細はサイドバーなしの全幅画面(従来の体裁)
-  if (route?.kind === "document") {
-    const doc = documentDetail(data, route.id);
+  // 書類詳細・書類追加はサイドバーなしの全幅画面(従来の体裁)
+  if (route?.kind === "document" || route?.kind === "new") {
+    const options = folderOptions(data);
+    let screen: React.ReactNode;
+    if (route.kind === "new") {
+      // ?folder_id は存在するフォルダのときだけ初期選択にする
+      const folderId = searchParams.get("folder_id");
+      const preselect = options.some((o) => o.id === folderId) ? folderId : null;
+      screen = (
+        <div key={screenKey} className="min-h-dvh bg-gray-50">
+          <DocumentUploadForm folderOptions={options} preselectFolderId={preselect} />
+        </div>
+      );
+    } else {
+      const doc = documentDetail(data, route.id);
+      screen = doc ? (
+        <div key={screenKey} className="min-h-dvh bg-gray-50">
+          <DocumentDetail doc={doc} folderOptions={options} />
+        </div>
+      ) : (
+        <NotFoundPanel title="書類が見つかりません" />
+      );
+    }
     return (
       <FilerUserProvider user={user}>
         <FilerAppNavProvider>
-          {doc ? (
-            <div key={screenKey} className="min-h-dvh bg-gray-50">
-              <DocumentDetail doc={doc} folderOptions={folderOptions(data)} />
-            </div>
-          ) : (
-            <NotFoundPanel title="書類が見つかりません" />
-          )}
+          {screen}
+          <UploadIndicator />
         </FilerAppNavProvider>
       </FilerUserProvider>
     );
@@ -83,6 +100,7 @@ export function FilerApp({ user, children }: { user: FilerUser; children: React.
             )}
           </div>
         </div>
+        <UploadIndicator />
       </FilerAppNavProvider>
     </FilerUserProvider>
   );
@@ -95,7 +113,7 @@ function ClientScreen({
   user,
   today,
 }: {
-  route: Exclude<ClientRoute, { kind: "document" }>;
+  route: Exclude<ClientRoute, { kind: "document" } | { kind: "new" }>;
   searchParams: URLSearchParams;
   data: BootstrapData;
   user: FilerUser;

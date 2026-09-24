@@ -6,6 +6,7 @@ import type { FilerView } from "@/lib/filer-derive";
 import { DocumentActionsMenu } from "./DocumentActionsMenu";
 import { FolderActionsMenu } from "./FolderActionsMenu";
 import { NewFolderButton } from "./NewFolderButton";
+import { UploadRows, useUploadsIn } from "./UploadRows";
 import { AppLink } from "./AppLink";
 
 const GRID = "grid grid-cols-[1fr_180px_90px_130px_150px_44px] items-center";
@@ -17,6 +18,7 @@ function folderHref(id: string | null): string {
 // PC ファイラーのメイン領域。サイドバーは (filer) 共通レイアウトが持つ。
 export function DesktopFiler({ view }: { view: FilerView }) {
   const today = todayInJST();
+  const uploads = useUploadsIn(view.currentFolderId);
   const parent = view.breadcrumb.length > 1 ? view.breadcrumb[view.breadcrumb.length - 2] : null;
 
   return (
@@ -116,6 +118,8 @@ export function DesktopFiler({ view }: { view: FilerView }) {
           </div>
         ))}
 
+        <UploadRows folderId={view.currentFolderId} />
+
         {view.documents.map((d) => (
           <div
             key={d.id}
@@ -144,7 +148,7 @@ export function DesktopFiler({ view }: { view: FilerView }) {
           </div>
         ))}
 
-        {view.folders.length === 0 && view.documents.length === 0 && (
+        {view.folders.length === 0 && view.documents.length === 0 && uploads.length === 0 && (
           <p className="px-5 py-10 text-center text-sm text-gray-400">このフォルダは空です</p>
         )}
       </div>

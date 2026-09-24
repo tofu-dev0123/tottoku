@@ -2,17 +2,17 @@ import { describe, expect, it } from "vitest";
 import { documentListScreen, isClientHref, matchClientRoute } from "./client-routes";
 
 describe("matchClientRoute", () => {
-  it("ホーム・フォルダ・書類一覧・書類詳細・検索に一致する", () => {
+  it("ホーム・フォルダ・書類一覧・書類詳細・書類追加・検索に一致する", () => {
     expect(matchClientRoute("/")).toEqual({ kind: "home" });
     expect(matchClientRoute("/folders")).toEqual({ kind: "folders" });
     expect(matchClientRoute("/folders/abc-123")).toEqual({ kind: "folder", id: "abc-123" });
     expect(matchClientRoute("/documents")).toEqual({ kind: "documents" });
     expect(matchClientRoute("/search")).toEqual({ kind: "search" });
     expect(matchClientRoute("/documents/abc")).toEqual({ kind: "document", id: "abc" });
+    expect(matchClientRoute("/documents/new")).toEqual({ kind: "new" });
   });
 
   it("サーバー描画のルートには一致しない", () => {
-    expect(matchClientRoute("/documents/new")).toBeNull();
     expect(matchClientRoute("/documents/abc/extra")).toBeNull();
     expect(matchClientRoute("/notifications")).toBeNull();
     expect(matchClientRoute("/folders/abc/extra")).toBeNull();
@@ -25,7 +25,8 @@ describe("isClientHref", () => {
     expect(isClientHref("/#top")).toBe(true);
     expect(isClientHref("/documents?expiring_within=30")).toBe(true);
     expect(isClientHref("/documents/abc?x=1")).toBe(true);
-    expect(isClientHref("/documents/new?folder_id=abc")).toBe(false);
+    expect(isClientHref("/documents/new?folder_id=abc")).toBe(true);
+    expect(isClientHref("/notifications")).toBe(false);
   });
 
   it("外部 URL・プロトコル相対 URL は対象外", () => {
