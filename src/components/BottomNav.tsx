@@ -1,5 +1,5 @@
 import { Bell, Camera, Folder, Home, Settings } from "lucide-react";
-import Link from "next/link";
+import { AppLink } from "@/components/home/AppLink";
 
 type Tab = "home" | "folders" | "notifications" | "settings";
 
@@ -19,7 +19,7 @@ export function BottomNav({ active }: { active: Tab }) {
         icon={<Folder className="size-5" />}
         active={active === "folders"}
       />
-      <Link
+      <AppLink
         href="/documents/new"
         className="flex flex-col items-center text-gray-500 transition-transform active:scale-95"
       >
@@ -27,7 +27,7 @@ export function BottomNav({ active }: { active: Tab }) {
           <Camera className="size-6" />
         </span>
         <span className="mt-0.5 text-[10px]">追加</span>
-      </Link>
+      </AppLink>
       <NavItem
         href="/notifications"
         label="通知"
@@ -56,12 +56,12 @@ function NavItem({
   active: boolean;
 }) {
   return (
-    <Link
+    <AppLink
       href={href}
       className={`flex flex-1 flex-col items-center gap-0.5 transition-opacity active:opacity-60 ${active ? "text-blue-700" : "text-gray-400"}`}
     >
       {icon}
       <span className="text-[10px]">{label}</span>
-    </Link>
+    </AppLink>
   );
 }

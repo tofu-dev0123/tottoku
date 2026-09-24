@@ -4,6 +4,7 @@ import { FolderInput, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
 import { MoveDialog } from "./MoveDialog";
+import { useAppRouter } from "./AppLink";
 
 type Impact = { descendantFolderCount: number; documentCount: number };
 
@@ -20,6 +21,7 @@ export function FolderActionsMenu({
   variant?: "row" | "header";
 }) {
   const router = useRouter();
+  const appRouter = useAppRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mode, setMode] = useState<"rename" | "move" | "delete" | null>(null);
   const [name, setName] = useState(folder.name);
@@ -104,8 +106,9 @@ export function FolderActionsMenu({
     if (res.ok) {
       setBusy(false);
       setMode(null);
-      if (redirectTo) router.push(redirectTo);
-      else router.refresh();
+      // 削除したフォルダから親へ移る。ストア(レイアウトのハイドレーション)は refresh で更新する
+      if (redirectTo) appRouter.push(redirectTo);
+      router.refresh();
     } else {
       setBusy(false);
       const body = await res.json().catch(() => ({}));

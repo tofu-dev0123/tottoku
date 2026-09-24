@@ -54,3 +54,4 @@ src/
 | `/api/tags`                   | `app/api/tags/route.ts`                    | GET                    |
 | `/api/dashboard`              | `app/api/dashboard/route.ts`               | GET                    |
 | `/api/activity`               | `app/api/activity/route.ts`                | GET                    |
+| `/api/bootstrap`              | `app/api/bootstrap/route.ts`               | GET                    |

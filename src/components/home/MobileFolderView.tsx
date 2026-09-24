@@ -1,11 +1,11 @@
 import { ChevronLeft, FileText, Folder } from "lucide-react";
-import Link from "next/link";
 import { BottomNav } from "@/components/BottomNav";
 import { formatDateJST } from "@/lib/date";
 import type { FilerView } from "@/server/filer";
 import { DocumentActionsMenu } from "./DocumentActionsMenu";
 import { FolderActionsMenu } from "./FolderActionsMenu";
 import { NewFolderButton } from "./NewFolderButton";
+import { AppLink } from "./AppLink";
 
 function folderHref(id: string | null): string {
   return id === null ? "/folders" : `/folders/${id}`;
@@ -20,9 +20,9 @@ export function MobileFolderView({ view }: { view: FilerView }) {
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-gray-50 pb-24">
       <header className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-3">
         {parent ? (
-          <Link href={folderHref(parent.id)} className="text-gray-500">
+          <AppLink href={folderHref(parent.id)} className="text-gray-500">
             <ChevronLeft className="size-5" />
-          </Link>
+          </AppLink>
         ) : (
           <Folder className="size-5 text-blue-700" />
         )}
@@ -42,7 +42,7 @@ export function MobileFolderView({ view }: { view: FilerView }) {
       <div className="flex-1 px-4 py-2">
         {view.folders.map((f) => (
           <div key={f.id} className="relative">
-            <Link
+            <AppLink
               href={`/folders/${f.id}`}
               className="flex items-center gap-3 border-b border-gray-100 py-3 pr-9 transition active:opacity-60"
             >
@@ -51,7 +51,7 @@ export function MobileFolderView({ view }: { view: FilerView }) {
                 <p className="truncate text-sm font-medium">{f.name}</p>
                 <p className="text-[11px] text-gray-400">{f.count}件</p>
               </div>
-            </Link>
+            </AppLink>
             <div className="absolute inset-y-0 right-0 flex items-center">
               <FolderActionsMenu folder={{ id: f.id, name: f.name }} />
             </div>
@@ -60,7 +60,7 @@ export function MobileFolderView({ view }: { view: FilerView }) {
 
         {view.documents.map((d) => (
           <div key={d.id} className="relative">
-            <Link
+            <AppLink
               href={`/documents/${d.id}`}
               className="flex items-center gap-3 border-b border-gray-100 py-3 pr-9 transition active:opacity-60"
             >
@@ -71,7 +71,7 @@ export function MobileFolderView({ view }: { view: FilerView }) {
                   {formatDateJST(d.createdAt)}
                 </span>
               </div>
-            </Link>
+            </AppLink>
             <div className="absolute inset-y-0 right-0 flex items-center">
               <DocumentActionsMenu doc={{ id: d.id, title: d.title }} />
             </div>

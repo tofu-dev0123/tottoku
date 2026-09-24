@@ -2,7 +2,6 @@ import "server-only";
 import {
   and,
   asc,
-  count,
   desc,
   eq,
   gte,
@@ -17,7 +16,7 @@ import {
 import { db } from "@/db/client";
 import { documentFolders, documents, folders } from "@/db/schema";
 import { addDays, todayInJST } from "@/lib/date";
-import { getFolderDetail, listFolders } from "@/server/folders";
+import type { listFolders } from "@/server/folders";
 
 export type FilerDocument = {
   id: string;
@@ -65,35 +64,6 @@ async function attachFolderNames(docs: DocRow[]): Promise<FilerDocument[]> {
   return docs.map((d) => ({ ...d, folderNames: byDoc.get(d.id) ?? [] }));
 }
 
-// filer に並べる書類 + 所属フォルダ名。ファイルシステムと同様に「その階層の直下」だけを返す。
-// folderId 指定時はそのフォルダ直下、null はルート直下(どのフォルダにも属さない=未分類)。
-export async function getFilerDocuments(folderId: string | null): Promise<FilerDocument[]> {
-  const docs =
-    folderId === null
-      ? await db
-          .select(docCols)
-          .from(documents)
-          .where(
-            and(
-              isNull(documents.deletedAt),
-              notExists(
-                db
-                  .select({ x: sql`1` })
-                  .from(documentFolders)
-                  .where(eq(documentFolders.documentId, documents.id)),
-              ),
-            ),
-          )
-          .orderBy(desc(documents.createdAt))
-      : await db
-          .select(docCols)
-          .from(documents)
-          .innerJoin(documentFolders, eq(documentFolders.documentId, documents.id))
-          .where(and(eq(documentFolders.folderId, folderId), isNull(documents.deletedAt)))
-          .orderBy(desc(documents.createdAt));
-  return attachFolderNames(docs);
-}
-
 // サイドバー導線(期限が近い / 未分類 / 最近追加)と検索の一覧。
 // expiringWithin 指定時は期限昇順、それ以外は追加日降順。
 export type DocumentListFilter = {
@@ -136,56 +106,4 @@ export async function getDocumentList(filter: DocumentListFilter): Promise<Filer
     .where(and(...conds))
     .orderBy(order);
   return attachFolderNames(docs);
-}
-
-export async function getFilerCounts(): Promise<FilerCounts> {
-  const today = todayInJST();
-  const soon = addDays(today, 30);
-
-  const [total] = await db
-    .select({ c: count() })
-    .from(documents)
-    .where(isNull(documents.deletedAt));
-  const [expiring] = await db
-    .select({ c: count() })
-    .from(documents)
-    .where(
-      and(
-        isNull(documents.deletedAt),
-        gte(documents.expiryDate, today),
-        lte(documents.expiryDate, soon),
-      ),
-    );
-  const [unclassified] = await db
-    .select({ c: count() })
-    .from(documents)
-    .where(
-      and(
-        isNull(documents.deletedAt),
-        sql`not exists (select 1 from ${documentFolders} where ${documentFolders.documentId} = ${documents.id})`,
-      ),
-    );
-  return { total: total.c, expiringSoon: expiring.c, unclassified: unclassified.c };
-}
-
-// filer ページ用のメイン領域データ。folderId=null はルート(わが家の書類)。
-// サイドバー(ルート直下フォルダ・件数)は (filer) 共通レイアウトで別途取得する。
-export async function getFilerView(folderId: string | null): Promise<FilerView> {
-  if (folderId === null) {
-    const [folders, documents] = await Promise.all([listFolders(null), getFilerDocuments(null)]);
-    return {
-      currentFolderId: null,
-      breadcrumb: [{ id: null, name: "わが家の書類" }],
-      folders,
-      documents,
-    };
-  }
-  const detail = await getFolderDetail(folderId); // 404 は HttpError
-  const documents = await getFilerDocuments(folderId);
-  return {
-    currentFolderId: folderId,
-    breadcrumb: [{ id: null, name: "わが家の書類" }, ...detail.breadcrumb],
-    folders: detail.children,
-    documents,
-  };
 }

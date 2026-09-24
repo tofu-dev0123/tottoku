@@ -1,5 +1,4 @@
 import { ChevronLeft, ChevronRight, FileText, Folder, Upload } from "lucide-react";
-import Link from "next/link";
 import { ExpiryPill } from "@/components/documents/ExpiryPill";
 import { SearchBox } from "@/components/documents/SearchBox";
 import { formatDateJST, todayInJST } from "@/lib/date";
@@ -7,6 +6,7 @@ import type { FilerView } from "@/server/filer";
 import { DocumentActionsMenu } from "./DocumentActionsMenu";
 import { FolderActionsMenu } from "./FolderActionsMenu";
 import { NewFolderButton } from "./NewFolderButton";
+import { AppLink } from "./AppLink";
 
 const GRID = "grid grid-cols-[1fr_180px_90px_130px_150px_44px] items-center";
 
@@ -24,13 +24,13 @@ export function DesktopFiler({ view }: { view: FilerView }) {
       <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-2.5">
         <div className="flex text-gray-400">
           {parent ? (
-            <Link
+            <AppLink
               href={folderHref(parent.id)}
               aria-label="一つ上のフォルダへ戻る"
               className="flex size-7 items-center justify-center rounded-md text-gray-700 hover:bg-gray-100"
             >
               <ChevronLeft className="size-4" />
-            </Link>
+            </AppLink>
           ) : (
             <span className="flex size-7 items-center justify-center rounded-md">
               <ChevronLeft className="size-4" />
@@ -49,9 +49,9 @@ export function DesktopFiler({ view }: { view: FilerView }) {
                 {last ? (
                   <span>{b.name}</span>
                 ) : (
-                  <Link href={folderHref(b.id)} className="text-gray-500 hover:text-gray-900">
+                  <AppLink href={folderHref(b.id)} className="text-gray-500 hover:text-gray-900">
                     {b.name}
-                  </Link>
+                  </AppLink>
                 )}
               </span>
             );
@@ -70,7 +70,7 @@ export function DesktopFiler({ view }: { view: FilerView }) {
         <div className="flex-1" />
         <SearchBox className="w-56" />
         <NewFolderButton parentId={view.currentFolderId} />
-        <Link
+        <AppLink
           href={
             view.currentFolderId
               ? `/documents/new?folder_id=${view.currentFolderId}`
@@ -80,7 +80,7 @@ export function DesktopFiler({ view }: { view: FilerView }) {
         >
           <Upload className="size-4" />
           書類を追加
-        </Link>
+        </AppLink>
       </div>
 
       {/* List */}
@@ -101,7 +101,7 @@ export function DesktopFiler({ view }: { view: FilerView }) {
             key={f.id}
             className={`${GRID} group relative border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
           >
-            <Link href={`/folders/${f.id}`} aria-label={f.name} className="absolute inset-0" />
+            <AppLink href={`/folders/${f.id}`} aria-label={f.name} className="absolute inset-0" />
             <span className="pointer-events-none flex items-center gap-3">
               <Folder className="size-5 text-blue-700" />
               <span className="font-medium">{f.name}</span>
@@ -121,7 +121,11 @@ export function DesktopFiler({ view }: { view: FilerView }) {
             key={d.id}
             className={`${GRID} group relative border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
           >
-            <Link href={`/documents/${d.id}`} aria-label={d.title} className="absolute inset-0" />
+            <AppLink
+              href={`/documents/${d.id}`}
+              aria-label={d.title}
+              className="absolute inset-0"
+            />
             <span className="pointer-events-none flex min-w-0 items-center gap-3">
               <FileText className="size-5 shrink-0 text-gray-400" />
               <span className="truncate font-medium">{d.title}</span>
