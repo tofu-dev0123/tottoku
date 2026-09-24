@@ -78,7 +78,7 @@ const nextConfig: NextConfig = { cacheComponents: true };
 | `getFilerCounts()` | `counts` | **要** | minutes | expiringSoon が today 依存 → today をキー化 |
 | `getDocumentList(filter)` | `documents` | 条件付き | minutes/hours | `expiringWithin` 指定時のみ today 依存 → today をキー化 |
 | `getExpiringDocuments(limit)` | `documents` | **要** | minutes | today をキー化 |
-| `getFilerData(folderId)` | — | — | **キャッシュしない** | 上記 leaf を束ねる薄い composer。leaf 側でキャッシュ |
+| `getFilerView(folderId)` | — | — | **キャッシュしない** | 上記 leaf を束ねる薄い composer。leaf 側でキャッシュ(サイドバー分は `(filer)` レイアウトで取得) |
 | `getFolderDeletionImpact(id)` | — | — | キャッシュしない | 確認ダイアログ用の一時 read |
 | `getDocumentForDownload(id)` | — | — | **絶対キャッシュ禁止** | 署名付き URL。短命・都度発行 |
 

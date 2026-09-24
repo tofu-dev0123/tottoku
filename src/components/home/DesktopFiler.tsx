@@ -3,9 +3,8 @@ import Link from "next/link";
 import { ExpiryPill } from "@/components/documents/ExpiryPill";
 import { SearchBox } from "@/components/documents/SearchBox";
 import { formatDateJST, todayInJST } from "@/lib/date";
-import type { FilerCounts, FilerFolder, FilerView } from "@/server/filer";
+import type { FilerView } from "@/server/filer";
 import { DocumentActionsMenu } from "./DocumentActionsMenu";
-import { FilerSidebar } from "./FilerSidebar";
 import { FolderActionsMenu } from "./FolderActionsMenu";
 import { NewFolderButton } from "./NewFolderButton";
 
@@ -15,166 +14,139 @@ function folderHref(id: string | null): string {
   return id === null ? "/" : `/folders/${id}`;
 }
 
-export function DesktopFiler({
-  displayName,
-  email,
-  image,
-  sidebarFolders,
-  counts,
-  view,
-}: {
-  displayName: string;
-  email: string | null;
-  image?: string | null;
-  sidebarFolders: FilerFolder[];
-  counts: FilerCounts;
-  view: FilerView;
-}) {
+// PC ファイラーのメイン領域。サイドバーは (filer) 共通レイアウトが持つ。
+export function DesktopFiler({ view }: { view: FilerView }) {
   const today = todayInJST();
   const parent = view.breadcrumb.length > 1 ? view.breadcrumb[view.breadcrumb.length - 2] : null;
 
   return (
-    <div className="flex h-dvh bg-white text-gray-900">
-      <FilerSidebar
-        displayName={displayName}
-        email={email}
-        image={image}
-        sidebarFolders={sidebarFolders}
-        counts={counts}
-        activeKey={view.currentFolderId ?? "home"}
-      />
-
-      {/* Main */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-2.5">
-          <div className="flex text-gray-400">
-            {parent ? (
-              <Link
-                href={folderHref(parent.id)}
-                aria-label="一つ上のフォルダへ戻る"
-                className="flex size-7 items-center justify-center rounded-md text-gray-700 hover:bg-gray-100"
-              >
-                <ChevronLeft className="size-4" />
-              </Link>
-            ) : (
-              <span className="flex size-7 items-center justify-center rounded-md">
-                <ChevronLeft className="size-4" />
-              </span>
-            )}
+    <div className="flex h-dvh min-w-0 flex-col">
+      <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-2.5">
+        <div className="flex text-gray-400">
+          {parent ? (
+            <Link
+              href={folderHref(parent.id)}
+              aria-label="一つ上のフォルダへ戻る"
+              className="flex size-7 items-center justify-center rounded-md text-gray-700 hover:bg-gray-100"
+            >
+              <ChevronLeft className="size-4" />
+            </Link>
+          ) : (
             <span className="flex size-7 items-center justify-center rounded-md">
-              <ChevronRight className="size-4" />
+              <ChevronLeft className="size-4" />
             </span>
-          </div>
-          <nav className="flex items-center gap-1 text-[15px] font-semibold">
-            {view.breadcrumb.map((b, i) => {
-              const last = i === view.breadcrumb.length - 1;
-              return (
-                <span key={b.id ?? "root"} className="flex items-center gap-1">
-                  {i > 0 && <span className="text-gray-300">/</span>}
-                  {last ? (
-                    <span>{b.name}</span>
-                  ) : (
-                    <Link href={folderHref(b.id)} className="text-gray-500 hover:text-gray-900">
-                      {b.name}
-                    </Link>
-                  )}
-                </span>
-              );
-            })}
-          </nav>
-          {view.currentFolderId && (
-            <FolderActionsMenu
-              variant="header"
-              folder={{
-                id: view.currentFolderId,
-                name: view.breadcrumb[view.breadcrumb.length - 1].name,
-              }}
-              redirectTo={folderHref(parent?.id ?? null)}
-            />
           )}
-          <div className="flex-1" />
-          <SearchBox className="w-56" />
-          <NewFolderButton parentId={view.currentFolderId} />
-          <Link
-            href={
-              view.currentFolderId
-                ? `/documents/new?folder_id=${view.currentFolderId}`
-                : "/documents/new"
-            }
-            className="flex items-center gap-1.5 rounded-lg bg-blue-700 px-3 py-2 text-[13px] font-semibold text-white"
-          >
-            <Upload className="size-4" />
-            書類を追加
-          </Link>
+          <span className="flex size-7 items-center justify-center rounded-md">
+            <ChevronRight className="size-4" />
+          </span>
+        </div>
+        <nav className="flex items-center gap-1 text-[15px] font-semibold">
+          {view.breadcrumb.map((b, i) => {
+            const last = i === view.breadcrumb.length - 1;
+            return (
+              <span key={b.id ?? "root"} className="flex items-center gap-1">
+                {i > 0 && <span className="text-gray-300">/</span>}
+                {last ? (
+                  <span>{b.name}</span>
+                ) : (
+                  <Link href={folderHref(b.id)} className="text-gray-500 hover:text-gray-900">
+                    {b.name}
+                  </Link>
+                )}
+              </span>
+            );
+          })}
+        </nav>
+        {view.currentFolderId && (
+          <FolderActionsMenu
+            variant="header"
+            folder={{
+              id: view.currentFolderId,
+              name: view.breadcrumb[view.breadcrumb.length - 1].name,
+            }}
+            redirectTo={folderHref(parent?.id ?? null)}
+          />
+        )}
+        <div className="flex-1" />
+        <SearchBox className="w-56" />
+        <NewFolderButton parentId={view.currentFolderId} />
+        <Link
+          href={
+            view.currentFolderId
+              ? `/documents/new?folder_id=${view.currentFolderId}`
+              : "/documents/new"
+          }
+          className="flex items-center gap-1.5 rounded-lg bg-blue-700 px-3 py-2 text-[13px] font-semibold text-white"
+        >
+          <Upload className="size-4" />
+          書類を追加
+        </Link>
+      </div>
+
+      {/* List */}
+      <div className="flex-1 overflow-auto">
+        <div
+          className={`${GRID} sticky top-0 border-b border-gray-200 bg-white px-5 py-2 text-xs text-gray-500`}
+        >
+          <div>名前</div>
+          <div>フォルダ</div>
+          <div>件数</div>
+          <div>追加日</div>
+          <div className="text-right">期限</div>
+          <div />
         </div>
 
-        {/* List */}
-        <div className="flex-1 overflow-auto">
+        {view.folders.map((f) => (
           <div
-            className={`${GRID} sticky top-0 border-b border-gray-200 bg-white px-5 py-2 text-xs text-gray-500`}
+            key={f.id}
+            className={`${GRID} group relative border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
           >
-            <div>名前</div>
-            <div>フォルダ</div>
-            <div>件数</div>
-            <div>追加日</div>
-            <div className="text-right">期限</div>
-            <div />
+            <Link href={`/folders/${f.id}`} aria-label={f.name} className="absolute inset-0" />
+            <span className="pointer-events-none flex items-center gap-3">
+              <Folder className="size-5 text-blue-700" />
+              <span className="font-medium">{f.name}</span>
+            </span>
+            <span className="pointer-events-none text-gray-400">—</span>
+            <span className="pointer-events-none text-gray-500">{f.count}件</span>
+            <span className="pointer-events-none text-gray-400">—</span>
+            <span className="pointer-events-none text-right text-gray-400">—</span>
+            <div className="relative flex items-center justify-end">
+              <FolderActionsMenu folder={{ id: f.id, name: f.name }} />
+            </div>
           </div>
+        ))}
 
-          {view.folders.map((f) => (
-            <div
-              key={f.id}
-              className={`${GRID} group relative border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
-            >
-              <Link href={`/folders/${f.id}`} aria-label={f.name} className="absolute inset-0" />
-              <span className="pointer-events-none flex items-center gap-3">
-                <Folder className="size-5 text-blue-700" />
-                <span className="font-medium">{f.name}</span>
-              </span>
-              <span className="pointer-events-none text-gray-400">—</span>
-              <span className="pointer-events-none text-gray-500">{f.count}件</span>
-              <span className="pointer-events-none text-gray-400">—</span>
-              <span className="pointer-events-none text-right text-gray-400">—</span>
-              <div className="relative flex items-center justify-end">
-                <FolderActionsMenu folder={{ id: f.id, name: f.name }} />
-              </div>
+        {view.documents.map((d) => (
+          <div
+            key={d.id}
+            className={`${GRID} group relative border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
+          >
+            <Link href={`/documents/${d.id}`} aria-label={d.title} className="absolute inset-0" />
+            <span className="pointer-events-none flex min-w-0 items-center gap-3">
+              <FileText className="size-5 shrink-0 text-gray-400" />
+              <span className="truncate font-medium">{d.title}</span>
+            </span>
+            <span className="pointer-events-none truncate text-[13px] text-gray-500">
+              {d.folderNames.length > 0 ? d.folderNames.join(" / ") : "未分類"}
+            </span>
+            <span className="pointer-events-none text-gray-400">—</span>
+            <span className="pointer-events-none text-gray-500">{formatDateJST(d.createdAt)}</span>
+            <span className="pointer-events-none text-right">
+              <ExpiryPill expiryDate={d.expiryDate} today={today} />
+            </span>
+            <div className="relative flex items-center justify-end">
+              <DocumentActionsMenu doc={{ id: d.id, title: d.title }} />
             </div>
-          ))}
+          </div>
+        ))}
 
-          {view.documents.map((d) => (
-            <div
-              key={d.id}
-              className={`${GRID} group relative border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
-            >
-              <Link href={`/documents/${d.id}`} aria-label={d.title} className="absolute inset-0" />
-              <span className="pointer-events-none flex min-w-0 items-center gap-3">
-                <FileText className="size-5 shrink-0 text-gray-400" />
-                <span className="truncate font-medium">{d.title}</span>
-              </span>
-              <span className="pointer-events-none truncate text-[13px] text-gray-500">
-                {d.folderNames.length > 0 ? d.folderNames.join(" / ") : "未分類"}
-              </span>
-              <span className="pointer-events-none text-gray-400">—</span>
-              <span className="pointer-events-none text-gray-500">
-                {formatDateJST(d.createdAt)}
-              </span>
-              <span className="pointer-events-none text-right">
-                <ExpiryPill expiryDate={d.expiryDate} today={today} />
-              </span>
-              <div className="relative flex items-center justify-end">
-                <DocumentActionsMenu doc={{ id: d.id, title: d.title }} />
-              </div>
-            </div>
-          ))}
+        {view.folders.length === 0 && view.documents.length === 0 && (
+          <p className="px-5 py-10 text-center text-sm text-gray-400">このフォルダは空です</p>
+        )}
+      </div>
 
-          {view.folders.length === 0 && view.documents.length === 0 && (
-            <p className="px-5 py-10 text-center text-sm text-gray-400">このフォルダは空です</p>
-          )}
-        </div>
-
-        <div className="border-t border-gray-200 px-5 py-1.5 text-xs text-gray-500">
-          {view.folders.length} フォルダ・{view.documents.length} 書類
-        </div>
+      <div className="border-t border-gray-200 px-5 py-1.5 text-xs text-gray-500">
+        {view.folders.length} フォルダ・{view.documents.length} 書類
       </div>
     </div>
   );
