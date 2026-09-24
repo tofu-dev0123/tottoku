@@ -1,8 +1,8 @@
 import { ChevronLeft, FileText, Layers } from "lucide-react";
-import Link from "next/link";
 import { BottomNav } from "@/components/BottomNav";
+import { AppLink } from "@/components/home/AppLink";
 import { formatDateJST } from "@/lib/date";
-import type { FilerDocument } from "@/server/filer";
+import type { FilerDocument } from "@/lib/filer-derive";
 import { SearchBox } from "./SearchBox";
 
 // モバイルの書類一覧/検索ビュー。ホームのフォルダ画面と体裁を揃える。
@@ -21,9 +21,9 @@ export function MobileDocumentList({
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-gray-50 pb-24">
       <header className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-3">
-        <Link href="/" className="text-gray-500" aria-label="ホームへ">
+        <AppLink href="/" className="text-gray-500" aria-label="ホームへ">
           <ChevronLeft className="size-5" />
-        </Link>
+        </AppLink>
         <p className="truncate text-sm font-medium">{title}</p>
       </header>
 
@@ -35,7 +35,7 @@ export function MobileDocumentList({
 
       <div className="flex-1 px-4 py-2">
         {documents.map((d) => (
-          <Link
+          <AppLink
             key={d.id}
             href={`/documents/${d.id}`}
             className="flex items-center gap-3 border-b border-gray-100 py-3 transition active:opacity-60"
@@ -53,7 +53,7 @@ export function MobileDocumentList({
                 )}
               </div>
             </div>
-          </Link>
+          </AppLink>
         ))}
 
         {documents.length === 0 && (

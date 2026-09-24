@@ -32,6 +32,8 @@ const zTags = z.array(z.string().trim().min(1).max(50));
 const zFolderIds = z.array(z.string().uuid()).max(1, "書類が所属できるフォルダは1つだけです");
 
 export const createDocumentSchema = z.object({
+  // 楽観的表示(バックグラウンドアップロード)のためクライアントが採番した id(省略時はサーバーで採番)
+  id: z.string().uuid().optional(),
   title: z.string().trim().min(1, "タイトルは必須です").max(200),
   s3_key: z.string().trim().min(1),
   mime_type: z.enum(ALLOWED_MIME_TYPES),
@@ -337,6 +339,7 @@ export async function createDocument(input: CreateDocumentInput, userId: string)
     const [row] = await db
       .insert(documents)
       .values({
+        id: input.id,
         title: input.title.trim(),
         s3Key: input.s3_key,
         mimeType: input.mime_type,
@@ -348,8 +351,17 @@ export async function createDocument(input: CreateDocumentInput, userId: string)
       .returning({ id: documents.id });
     id = row.id;
   } catch (e) {
-    if (isUniqueViolation(e)) throw new HttpError(409, "この s3_key は既に登録されています");
-    throw e;
+    if (!isUniqueViolation(e)) throw e;
+    if (input.id) {
+      const [existing] = await db
+        .select({ s3Key: documents.s3Key })
+        .from(documents)
+        .where(eq(documents.id, input.id));
+      // 通信断後の再試行で前回の登録が成功していた場合は、同じ結果を返す(冪等)
+      if (existing?.s3Key === input.s3_key) return getDocumentDetail(input.id);
+      if (existing) throw new HttpError(409, "同じ id の書類が既に存在します");
+    }
+    throw new HttpError(409, "この s3_key は既に登録されています");
   }
 
   if (input.folder_ids?.length) {

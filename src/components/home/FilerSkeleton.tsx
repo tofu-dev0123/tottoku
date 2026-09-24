@@ -4,14 +4,16 @@ const GRID = "grid grid-cols-[1fr_180px_130px_150px] items-center";
 
 // ファイラー系(ホーム/フォルダ/一覧/検索)の遷移待ちスケルトン。
 // 実画面と同じ md:hidden / hidden md:block とコンテナ幅で描き、レイアウトシフトを抑える。
+// (filer) の外から入るとき(共通レイアウトごと読み込むとき)に使うため、サイドバー込みで描く。
 export function FilerSkeleton() {
   return (
     <>
       <div className="md:hidden">
         <MobileListSkeleton />
       </div>
-      <div className="hidden md:block">
-        <DesktopFilerSkeleton />
+      <div className="hidden md:flex md:h-dvh md:bg-white">
+        <SidebarSkeleton />
+        <DesktopMainSkeleton />
       </div>
     </>
   );
@@ -44,52 +46,52 @@ function MobileListSkeleton() {
   );
 }
 
-function DesktopFilerSkeleton() {
+function SidebarSkeleton() {
   return (
-    <div className="flex h-dvh bg-white text-gray-900">
-      {/* サイドバー */}
-      <aside className="flex w-60 shrink-0 flex-col gap-1 border-r border-gray-200 bg-[#f1f2f4] p-3">
-        <Skeleton className="mx-2 my-2 h-8 w-28" />
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={`n${i}`} className="h-8 rounded-lg" />
-        ))}
-        <Skeleton className="mt-3 h-3 w-16" />
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={`f${i}`} className="h-8 rounded-lg" />
-        ))}
-        <div className="mt-auto flex items-center gap-2 border-t border-gray-200 px-2 pt-3">
-          <Skeleton className="size-7 rounded-full" />
-          <Skeleton className="h-3 w-24" />
-        </div>
-      </aside>
+    <aside className="flex w-60 shrink-0 flex-col gap-1 border-r border-gray-200 bg-[#f1f2f4] p-3">
+      <Skeleton className="mx-2 my-2 h-8 w-28" />
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={`n${i}`} className="h-8 rounded-lg" />
+      ))}
+      <Skeleton className="mt-3 h-3 w-16" />
+      {Array.from({ length: 3 }).map((_, i) => (
+        <Skeleton key={`f${i}`} className="h-8 rounded-lg" />
+      ))}
+      <div className="mt-auto flex items-center gap-2 border-t border-gray-200 px-2 pt-3">
+        <Skeleton className="size-7 rounded-full" />
+        <Skeleton className="h-3 w-24" />
+      </div>
+    </aside>
+  );
+}
 
-      {/* メイン */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-3">
-          <Skeleton className="h-4 w-40" />
-          <div className="flex-1" />
-          <Skeleton className="h-8 w-56 rounded-lg" />
-          <Skeleton className="h-9 w-28 rounded-lg" />
+function DesktopMainSkeleton() {
+  return (
+    <div className="flex h-dvh min-w-0 flex-1 flex-col">
+      <div className="flex items-center gap-3 border-b border-gray-200 px-4 py-3">
+        <Skeleton className="h-4 w-40" />
+        <div className="flex-1" />
+        <Skeleton className="h-8 w-56 rounded-lg" />
+        <Skeleton className="h-9 w-28 rounded-lg" />
+      </div>
+      <div className="flex-1">
+        <div className={`${GRID} border-b border-gray-200 px-5 py-3`}>
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="ml-auto h-3 w-12" />
         </div>
-        <div className="flex-1">
-          <div className={`${GRID} border-b border-gray-200 px-5 py-3`}>
-            <Skeleton className="h-3 w-12" />
-            <Skeleton className="h-3 w-12" />
-            <Skeleton className="h-3 w-12" />
-            <Skeleton className="ml-auto h-3 w-12" />
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div key={i} className={`${GRID} border-b border-gray-100 px-5 py-3.5`}>
+            <span className="flex items-center gap-3">
+              <Skeleton className="size-5 rounded-md" />
+              <Skeleton className="h-4 w-48" />
+            </span>
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-3.5 w-20" />
+            <Skeleton className="ml-auto h-5 w-16 rounded-full" />
           </div>
-          {Array.from({ length: 9 }).map((_, i) => (
-            <div key={i} className={`${GRID} border-b border-gray-100 px-5 py-3.5`}>
-              <span className="flex items-center gap-3">
-                <Skeleton className="size-5 rounded-md" />
-                <Skeleton className="h-4 w-48" />
-              </span>
-              <Skeleton className="h-3.5 w-24" />
-              <Skeleton className="h-3.5 w-20" />
-              <Skeleton className="ml-auto h-5 w-16 rounded-full" />
-            </div>
-          ))}
-        </div>
+        ))}
       </div>
     </div>
   );

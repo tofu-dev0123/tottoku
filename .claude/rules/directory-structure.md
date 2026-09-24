@@ -8,9 +8,11 @@
 src/
 ├─ app/                 # ルーティング（画面 + Route Handler のみ）
 │  ├─ api/**/route.ts   # API。設計書 §2 のパスと 1:1 対応
-│  ├─ layout.tsx        # ルートレイアウト
+│  ├─ layout.tsx        # ルートレイアウト（QueryProvider / ToastProvider）
 │  ├─ globals.css       # 全体スタイル（Tailwind）
-│  └─ <screen>/page.tsx # 画面
+│  ├─ (filer)/          # SPA 部分。layout.tsx で bootstrap をハイドレーションし FilerApp が描画
+│  │  └─ **/page.tsx    #   入口のみ（null を返す）
+│  └─ <screen>/page.tsx # (filer) 外の画面（通知・設定・ログイン・LP）
 ├─ components/          # 再利用 UI コンポーネント
 ├─ db/                  # Drizzle: schema.ts / client.ts（server-only）
 ├─ lib/                 # 横断ユーティリティ（auth.ts / s3.ts / env.ts など）
@@ -20,10 +22,11 @@ src/
 
 ### 各ディレクトリの責務
 
-- **`app/`** — 画面（`page.tsx`）と Route Handler（`route.ts`）だけを置く。ロジックは持たせず薄く保つ。
+- **`app/`** — 画面（`page.tsx`）と Route Handler（`route.ts`）だけを置く。ロジックは持たせず薄く保つ。`(filer)` 配下のページは入口のみで、描画は `components/home/FilerApp.tsx` が担う。
 - **`components/`** — 画面をまたいで使う UI。1画面専用の細かい部品は画面ディレクトリ内にコロケーションしてよい。
+  - `components/home/` にクライアントストアまわり（`FilerApp`・`AppLink`・`use-bootstrap`・`use-store-mutations`・`pending-deletes`・`upload-queue`・`client-routes`）を置く。
 - **`db/`** — Drizzle のスキーマ定義（`schema.ts`）と DB クライアント（`client.ts`）。`server-only`。
-- **`lib/`** — 認証設定（`auth.ts`）・S3 クライアント/署名（`s3.ts`）・環境変数（`env.ts`）など横断的なユーティリティ。
+- **`lib/`** — 認証設定（`auth.ts`）・S3 クライアント/署名（`s3.ts`）・環境変数（`env.ts`）など横断的なユーティリティ。クライアントストアの派生・更新の純関数（`filer-derive.ts`・`store-updates.ts`・`folder-tree.ts`）もここに置き、テストする。
 - **`server/`** — ドメイン別（documents / folders / tags など）のデータアクセスとビジネスロジック。SQL/Drizzle クエリはここに集約する。`server-only`。
 - **`types/`** — 複数箇所で共有する型のみ。Drizzle 推論・Zod `z.infer` で導ける型はここに重複定義しない。
 
@@ -54,3 +57,4 @@ src/
 | `/api/tags`                   | `app/api/tags/route.ts`                    | GET                    |
 | `/api/dashboard`              | `app/api/dashboard/route.ts`               | GET                    |
 | `/api/activity`               | `app/api/activity/route.ts`                | GET                    |
+| `/api/bootstrap`              | `app/api/bootstrap/route.ts`               | GET                    |

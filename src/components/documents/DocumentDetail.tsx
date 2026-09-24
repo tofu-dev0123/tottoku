@@ -1,28 +1,19 @@
 "use client";
 
-import { ArrowLeft, Download, FileText, Loader2, Pencil, Trash2 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { ArrowLeft, Download, FileText, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { AppLink, useAppRouter } from "@/components/home/AppLink";
+import { useFilerUser } from "@/components/home/FilerUserProvider";
+import {
+  apiFetch,
+  useStoreMutation,
+  useUndoableDelete,
+} from "@/components/home/use-store-mutations";
 import { formatDateJST } from "@/lib/date";
+import type { DocumentDetailData } from "@/lib/filer-derive";
+import { type DocumentPatch, updateDocument } from "@/lib/store-updates";
 import { FolderSelect, type FolderOption } from "./FolderSelect";
 import { TagsInput } from "./TagsInput";
-
-export type DocumentDetailData = {
-  id: string;
-  title: string;
-  s3_key: string;
-  mime_type: string;
-  doc_date: string | null;
-  expiry_date: string | null;
-  memo: string | null;
-  folders: { id: string; name: string }[];
-  tags: string[];
-  uploaded_by: { id: string; displayName: string } | null;
-  updated_by: { id: string; displayName: string } | null;
-  created_at: string;
-  updated_at: string;
-};
 
 function displayDate(d: string | null): string {
   return d ? d.replaceAll("-", "/") : "—";
@@ -35,12 +26,35 @@ export function DocumentDetail({
   doc: DocumentDetailData;
   folderOptions: FolderOption[];
 }) {
-  const router = useRouter();
+  const appRouter = useAppRouter();
+  const user = useFilerUser();
 
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 保存は楽観的更新(失敗時はトーストで通知して元に戻す)。サーバーへは従来の snake_case で送る。
+  const update = useStoreMutation<DocumentPatch>({
+    request: (p) =>
+      apiFetch(
+        `/api/documents/${doc.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            title: p.title,
+            doc_date: p.docDate,
+            expiry_date: p.expiryDate,
+            memo: p.memo,
+            folder_ids: p.folderId ? [p.folderId] : [],
+            tags: p.tagNames,
+          }),
+        },
+        "保存に失敗しました",
+      ),
+    apply: (d, p) =>
+      updateDocument(d, doc.id, p, { userId: user.id, now: new Date().toISOString() }),
+  });
+  const undoableDelete = useUndoableDelete();
 
   // 編集フォームの状態
   const [title, setTitle] = useState(doc.title);
@@ -71,58 +85,36 @@ export function DocumentDetail({
     window.open(download_url, "_blank", "noopener");
   }
 
-  async function save() {
-    if (busy) return;
+  function save() {
     if (!title.trim()) return setError("タイトルを入力してください");
-    setBusy(true);
     setError(null);
-    const res = await fetch(`/api/documents/${doc.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        title: title.trim(),
-        doc_date: docDate || null,
-        expiry_date: expiryDate || null,
-        memo: memo.trim() || null,
-        folder_ids: folderId ? [folderId] : [],
-        tags,
-      }),
+    update.mutate({
+      title: title.trim(),
+      docDate: docDate || null,
+      expiryDate: expiryDate || null,
+      memo: memo.trim() || null,
+      folderId,
+      tagNames: tags,
     });
-    setBusy(false);
-    if (res.ok) {
-      setEditing(false);
-      router.refresh();
-    } else {
-      const b = await res.json().catch(() => ({}));
-      setError(b.error ?? "保存に失敗しました");
-    }
+    setEditing(false);
   }
 
-  async function remove() {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    const res = await fetch(`/api/documents/${doc.id}`, { method: "DELETE" });
-    if (res.ok) {
-      router.push("/");
-    } else {
-      setBusy(false);
-      const b = await res.json().catch(() => ({}));
-      setError(b.error ?? "削除に失敗しました");
-      setConfirmDelete(false);
-    }
+  function remove() {
+    setConfirmDelete(false);
+    appRouter.push("/");
+    undoableDelete({ kind: "document", id: doc.id, label: doc.title });
   }
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
       <div className="mb-4 flex items-center gap-2">
-        <Link
+        <AppLink
           href="/"
           className="flex size-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100"
           aria-label="戻る"
         >
           <ArrowLeft className="size-5" />
-        </Link>
+        </AppLink>
         <div className="flex-1" />
         {!editing && (
           <>
@@ -205,18 +197,16 @@ export function DocumentDetail({
                 resetEdit();
                 setEditing(false);
               }}
-              disabled={busy}
-              className="rounded-lg px-3 py-2 text-sm text-gray-500 disabled:opacity-50"
+              className="rounded-lg px-3 py-2 text-sm text-gray-500"
             >
               キャンセル
             </button>
             <button
               type="button"
               onClick={save}
-              disabled={busy || !title.trim()}
-              className="flex items-center gap-1.5 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              disabled={!title.trim()}
+              className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {busy && <Loader2 className="size-4 animate-spin" />}
               保存
             </button>
           </div>
@@ -235,13 +225,13 @@ export function DocumentDetail({
               {doc.folders.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {doc.folders.map((f) => (
-                    <Link
+                    <AppLink
                       key={f.id}
                       href={`/folders/${f.id}`}
                       className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-700 hover:bg-gray-200"
                     >
                       {f.name}
-                    </Link>
+                    </AppLink>
                   ))}
                 </div>
               ) : (
@@ -292,7 +282,7 @@ export function DocumentDetail({
       {confirmDelete && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4"
-          onClick={() => !busy && setConfirmDelete(false)}
+          onClick={() => setConfirmDelete(false)}
         >
           <div
             className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-lg"
@@ -300,23 +290,20 @@ export function DocumentDetail({
           >
             <h2 className="text-sm font-semibold">「{doc.title}」を削除しますか？</h2>
             <p className="mt-2 text-xs text-gray-500">
-              削除済みの書類は一覧・検索に表示されなくなります。
+              削除済みの書類は一覧・検索に表示されなくなります。削除後しばらくは「元に戻す」で取り消せます。
             </p>
-            {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setConfirmDelete(false)}
-                disabled={busy}
-                className="rounded-lg px-3 py-1.5 text-sm text-gray-500 disabled:opacity-50"
+                className="rounded-lg px-3 py-1.5 text-sm text-gray-500"
               >
                 キャンセル
               </button>
               <button
                 type="button"
                 onClick={remove}
-                disabled={busy}
-                className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+                className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white"
               >
                 削除する
               </button>

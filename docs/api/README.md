@@ -12,6 +12,7 @@
 | [folders.md](./folders.md) | フォルダ CRUD・ツリー |
 | [tags.md](./tags.md) | タグ |
 | [dashboard.md](./dashboard.md) | ダッシュボード・アクティビティ |
+| [bootstrap.md](./bootstrap.md) | クライアントストア用の全メタデータ一括取得 |
 
 ## 共通方針
 
@@ -45,3 +46,4 @@
 | GET | `/api/tags` | 全タグ |
 | GET | `/api/dashboard` | ホーム用（期限が近い書類 + 最近の追加） |
 | GET | `/api/activity` | 最近の追加/更新（派生ビュー） |
+| GET | `/api/bootstrap` | 全メタデータ一括（フォルダ・書類・タグ。クライアントストア用） |

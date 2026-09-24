@@ -9,7 +9,11 @@
 
 ## Server / Client
 
-- **デフォルトは Server Component。** `'use client'` はインタラクションが必要な葉のコンポーネントにのみ付ける。
+- **(filer) 配下の画面はクライアント描画（SPA 寄り）。** `src/app/(filer)/**/page.tsx` は入口のみ（`null` を返す）で、描画は `FilerApp` がクライアントストア（TanStack Query の bootstrap）から行う。設計は [docs/caching-strategy.md](../../docs/caching-strategy.md)。
+  - 画面データは `useBootstrap()` + `src/lib/filer-derive.ts` の純関数で導出する。**画面ごとに API を fetch しない。**
+  - (filer) 内の遷移は `AppLink` / `useAppRouter`（`next/link` / `useRouter().push` を直接使わない）。
+  - 更新は `useStoreMutation`（楽観的更新）、削除は `useUndoableDelete` を使う。**`router.refresh()` で反映させない。** ストアの変換は `src/lib/store-updates.ts` の純関数に置く。
+- **(filer) 外（通知・設定・ログイン・LP）とレイアウトは Server Component がデフォルト。** `'use client'` はインタラクションが必要な葉のコンポーネントにのみ付ける。
 - DB / S3 / 秘密情報に触るモジュール（`db/`・`lib/s3.ts`・`server/*` など）は**ファイル先頭で `import 'server-only'`** を付け、クライアントバンドルへの混入を防ぐ。
 
 ## 環境変数

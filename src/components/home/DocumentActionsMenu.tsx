@@ -1,56 +1,49 @@
 "use client";
 
 import { FileText, FolderInput, MoreVertical, Trash2 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
+import { updateDocument } from "@/lib/store-updates";
+import { AppLink } from "./AppLink";
+import { useFilerUser } from "./FilerUserProvider";
 import { MoveDialog } from "./MoveDialog";
+import { apiFetch, useStoreMutation, useUndoableDelete } from "./use-store-mutations";
 
-// 書類行のケバブメニュー(詳細/削除)。FolderActionsMenu と同方針:
-// 自前モーダル + fetch + router.refresh()、トーストは使わずインラインでエラー表示。
+type MoveVars = { id: string; folderId: string | null };
+
+// 書類行のケバブメニュー(詳細/移動/削除)。FolderActionsMenu と同方針:
+// 移動は楽観的更新で即反映(失敗時はトーストで通知して元に戻す)、削除は「元に戻す」付き。
 export function DocumentActionsMenu({ doc }: { doc: { id: string; title: string } }) {
-  const router = useRouter();
+  const user = useFilerUser();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [moving, setMoving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   // 移動先フォルダへ folder_ids を全置換(1書類=1フォルダ)。未分類は空配列。
-  async function moveTo(targetId: string | null): Promise<string | null> {
-    const res = await fetch(`/api/documents/${doc.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ folder_ids: targetId ? [targetId] : [] }),
-    });
-    if (res.ok) {
-      router.refresh();
-      return null;
-    }
-    const body = await res.json().catch(() => ({}));
-    return body.error ?? "移動に失敗しました";
+  const move = useStoreMutation<MoveVars>({
+    request: (v) =>
+      apiFetch(
+        `/api/documents/${v.id}`,
+        { method: "PATCH", body: JSON.stringify({ folder_ids: v.folderId ? [v.folderId] : [] }) },
+        "移動に失敗しました",
+      ),
+    apply: (d, v) =>
+      updateDocument(
+        d,
+        v.id,
+        { folderId: v.folderId },
+        { userId: user.id, now: new Date().toISOString() },
+      ),
+  });
+  const undoableDelete = useUndoableDelete();
+
+  function moveTo(targetId: string | null): string | null {
+    move.mutate({ id: doc.id, folderId: targetId });
+    return null;
   }
 
-  function close() {
-    if (busy) return;
+  function submitDelete() {
     setConfirmDelete(false);
-    setError(null);
-  }
-
-  async function submitDelete() {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    const res = await fetch(`/api/documents/${doc.id}`, { method: "DELETE" });
-    if (res.ok) {
-      setBusy(false);
-      setConfirmDelete(false);
-      router.refresh();
-    } else {
-      setBusy(false);
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "削除に失敗しました");
-    }
+    undoableDelete({ kind: "document", id: doc.id, label: doc.title });
   }
 
   return (
@@ -75,13 +68,13 @@ export function DocumentActionsMenu({ doc }: { doc: { id: string; title: string 
             onClick={() => setMenuOpen(false)}
           />
           <div className="absolute top-full right-0 z-50 mt-1 w-40 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg">
-            <Link
+            <AppLink
               href={`/documents/${doc.id}`}
               className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-50"
             >
               <FileText className="size-4 text-gray-500" />
               詳細
-            </Link>
+            </AppLink>
             <button
               type="button"
               onClick={() => {
@@ -97,7 +90,6 @@ export function DocumentActionsMenu({ doc }: { doc: { id: string; title: string 
               type="button"
               onClick={() => {
                 setMenuOpen(false);
-                setError(null);
                 setConfirmDelete(true);
               }}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-red-600 hover:bg-red-50"
@@ -119,26 +111,23 @@ export function DocumentActionsMenu({ doc }: { doc: { id: string; title: string 
       )}
 
       {confirmDelete && (
-        <Modal onClose={close}>
+        <Modal onClose={() => setConfirmDelete(false)}>
           <h2 className="text-sm font-semibold">「{doc.title}」を削除しますか？</h2>
           <p className="mt-2 text-xs text-gray-500">
-            削除済みの書類は一覧・検索に表示されなくなります。
+            削除済みの書類は一覧・検索に表示されなくなります。削除後しばらくは「元に戻す」で取り消せます。
           </p>
-          {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
           <div className="mt-4 flex justify-end gap-2">
             <button
               type="button"
-              onClick={close}
-              disabled={busy}
-              className="rounded-lg px-3 py-1.5 text-sm text-gray-500 disabled:opacity-50"
+              onClick={() => setConfirmDelete(false)}
+              className="rounded-lg px-3 py-1.5 text-sm text-gray-500"
             >
               キャンセル
             </button>
             <button
               type="button"
               onClick={submitDelete}
-              disabled={busy}
-              className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+              className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white"
             >
               削除する
             </button>

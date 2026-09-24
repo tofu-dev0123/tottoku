@@ -49,10 +49,11 @@
 ## POST /api/folders
 
 ```json
-{ "name": "東京海上", "parent_id": null }
+{ "id": "(任意) クライアント採番の uuid", "name": "東京海上", "parent_id": null }
 ```
 
-- 同一階層での名前重複は不可（`UNIQUE(parent_id, name)` とトップ階層の部分ユニークインデックス）。
+- `id` は任意。楽観的更新のためクライアントで採番した uuid を渡せる（省略時はサーバーで採番）。同じ id が既にあれば `409`。
+- 同一階層での名前重複は不可（`UNIQUE(parent_id, name)` とトップ階層の部分ユニークインデックス）。違反は `409`。
 - `created_by` はセッションの user。
 
 **Response**: `201` 作成されたフォルダ。

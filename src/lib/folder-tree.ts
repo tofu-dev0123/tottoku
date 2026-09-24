@@ -20,6 +20,19 @@ export function buildTree(folders: FolderRow[]): FolderNode[] {
   return build(null);
 }
 
+/** 所属フォルダ選択 UI 用。ツリー順にフラット化し、深さ(depth)を添えて返す。 */
+export function flattenTree(folders: FolderRow[]): { id: string; name: string; depth: number }[] {
+  const out: { id: string; name: string; depth: number }[] = [];
+  const walk = (nodes: FolderNode[], depth: number) => {
+    for (const n of nodes) {
+      out.push({ id: n.id, name: n.name, depth });
+      walk(n.children, depth + 1);
+    }
+  };
+  walk(buildTree(folders), 0);
+  return out;
+}
+
 /** id の子孫 id 全て(id 自身は含まない)。 */
 export function collectDescendantIds(folders: FolderRow[], id: string): Set<string> {
   const children = new Map<string, string[]>();

@@ -1,10 +1,10 @@
 import { AlertCircle, ChevronRight, Clock } from "lucide-react";
-import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { SearchBox } from "@/components/documents/SearchBox";
 import { BottomNav } from "@/components/BottomNav";
 import { daysUntil, todayInJST } from "@/lib/date";
 import type { ExpiringDocument } from "@/server/dashboard";
+import { AppLink } from "./AppLink";
 
 // モバイルのホーム(画面1)。期限が近い書類 + 検索窓。PC は DesktopFiler を使う。
 export function MobileHome({
@@ -40,9 +40,9 @@ export function MobileHome({
       <section className="px-5 pt-5">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-sm font-medium">期限が近い書類</span>
-          <Link href="/documents?expiring_within=60" className="text-xs text-blue-700">
+          <AppLink href="/documents?expiring_within=60" className="text-xs text-blue-700">
             すべて見る
-          </Link>
+          </AppLink>
         </div>
 
         {docs.length === 0 ? (
@@ -56,7 +56,7 @@ export function MobileHome({
               const urgent = left <= 14;
               return (
                 <li key={d.id}>
-                  <Link
+                  <AppLink
                     href={`/documents/${d.id}`}
                     className={`flex items-center gap-3 rounded-xl px-3 py-3 transition active:opacity-70 ${
                       urgent ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"
@@ -72,7 +72,7 @@ export function MobileHome({
                       <p className="mt-0.5 text-xs">期限まで あと {left}日</p>
                     </div>
                     <ChevronRight className="size-4 shrink-0" />
-                  </Link>
+                  </AppLink>
                 </li>
               );
             })}

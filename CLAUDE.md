@@ -7,6 +7,7 @@
 ## 技術スタック
 
 - Next.js 16 (App Router, Turbopack) / React 19 / TypeScript / Tailwind CSS v4
+- 画面は SPA 寄り: `(filer)` 配下は TanStack Query のクライアントストア（`/api/bootstrap`）+ pushState 遷移 + 楽観的更新（`docs/caching-strategy.md`）
 - 認証: Auth.js + Google ログイン + allowlist（家族のメールのみ許可）
 - ストレージ: Amazon S3（非公開・SSE・署名付き URL）
 - DB: サーバーレス PostgreSQL（Neon / Supabase 想定）
