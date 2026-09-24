@@ -1,9 +1,9 @@
 "use client";
 
 import { FileText, FolderInput, MoreVertical, Trash2 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
+import { AppLink } from "./AppLink";
 import { MoveDialog } from "./MoveDialog";
 
 // 書類行のケバブメニュー(詳細/削除)。FolderActionsMenu と同方針:
@@ -75,13 +75,13 @@ export function DocumentActionsMenu({ doc }: { doc: { id: string; title: string 
             onClick={() => setMenuOpen(false)}
           />
           <div className="absolute top-full right-0 z-50 mt-1 w-40 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg">
-            <Link
+            <AppLink
               href={`/documents/${doc.id}`}
               className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-gray-50"
             >
               <FileText className="size-4 text-gray-500" />
               詳細
-            </Link>
+            </AppLink>
             <button
               type="button"
               onClick={() => {

@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight, FileText, Folder, Upload } from "lucide-reac
 import { ExpiryPill } from "@/components/documents/ExpiryPill";
 import { SearchBox } from "@/components/documents/SearchBox";
 import { formatDateJST, todayInJST } from "@/lib/date";
-import type { FilerView } from "@/server/filer";
+import type { FilerView } from "@/lib/filer-derive";
 import { DocumentActionsMenu } from "./DocumentActionsMenu";
 import { FolderActionsMenu } from "./FolderActionsMenu";
 import { NewFolderButton } from "./NewFolderButton";

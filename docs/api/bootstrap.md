@@ -25,13 +25,17 @@ SPA 寄り構成（#37）のクライアントストア（TanStack Query）へ�
       "memo": null,
       "folderId": "uuid",
       "tagIds": ["uuid"],
+      "uploadedBy": "uuid",
+      "updatedBy": null,
       "createdAt": "2026-04-01T09:00:00.000Z",
       "updatedAt": "2026-04-01T09:00:00.000Z"
     }
   ],
-  "tags": [{ "id": "uuid", "name": "保険" }]
+  "tags": [{ "id": "uuid", "name": "保険" }],
+  "users": [{ "id": "uuid", "displayName": "たろう" }]
 }
 ```
 
 - `folderId` は所属フォルダ（高々1つ）。未分類は `null`
+- `uploadedBy` / `updatedBy` は user id。表示名は `users` から引く（`users` に email は含めない）
 - 日時は ISO 8601 文字列、日付は `YYYY-MM-DD`

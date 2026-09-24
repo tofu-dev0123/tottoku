@@ -1,7 +1,7 @@
 import { ChevronLeft, FileText, Folder } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { formatDateJST } from "@/lib/date";
-import type { FilerView } from "@/server/filer";
+import type { FilerView } from "@/lib/filer-derive";
 import { DocumentActionsMenu } from "./DocumentActionsMenu";
 import { FolderActionsMenu } from "./FolderActionsMenu";
 import { NewFolderButton } from "./NewFolderButton";

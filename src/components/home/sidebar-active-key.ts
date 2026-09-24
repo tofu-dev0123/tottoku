@@ -1,3 +1,5 @@
+import { parseDocumentListParams } from "./client-routes";
+
 // アクティブなサイドバー項目。フォルダは folderId を渡す。
 export type SidebarKey = "home" | "expiring" | "unclassified" | "recent" | (string & {});
 
@@ -10,11 +12,10 @@ export function sidebarActiveKey(pathname: string, searchParams: URLSearchParams
   if (folder) return decodeURIComponent(folder[1]);
 
   if (pathname === "/documents") {
-    const raw = searchParams.get("expiring_within");
-    const within = raw ? Number(raw) : NaN;
-    if (Number.isFinite(within) && within >= 0) return "expiring";
-    if (searchParams.get("folder_id") === "none") return "unclassified";
-    if (searchParams.get("q")?.trim()) return "";
+    const p = parseDocumentListParams(searchParams);
+    if (p.expiringWithin !== undefined) return "expiring";
+    if (p.unclassified) return "unclassified";
+    if (p.q) return "";
     return "recent";
   }
 

@@ -1,7 +1,7 @@
 import "server-only";
 import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db/client";
-import { documentFolders, documents, documentTags, folders, tags } from "@/db/schema";
+import { documentFolders, documents, documentTags, folders, tags, users } from "@/db/schema";
 
 // クライアントストア(TanStack Query)へ一括で載せるメタデータ。
 // 家族2名・数百件規模のため全件を返し、一覧/件数/期限などの派生はクライアントで計算する。
@@ -18,18 +18,24 @@ export type BootstrapDocument = {
   // 所属フォルダは高々1つ(未分類 = null)
   folderId: string | null;
   tagIds: string[];
+  // 追加者 / 最終更新者の user id(表示名は users から引く)
+  uploadedBy: string;
+  updatedBy: string | null;
   createdAt: string;
   updatedAt: string;
 };
 export type BootstrapTag = { id: string; name: string };
+// 利用者(家族)。書類詳細の「追加 / 更新」表示用で、email は含めない。
+export type BootstrapUser = { id: string; displayName: string };
 export type BootstrapData = {
   folders: BootstrapFolder[];
   documents: BootstrapDocument[];
   tags: BootstrapTag[];
+  users: BootstrapUser[];
 };
 
 export async function getBootstrapData(): Promise<BootstrapData> {
-  const [folderRows, docRows, folderLinks, tagLinks, tagRows] = await Promise.all([
+  const [folderRows, docRows, folderLinks, tagLinks, tagRows, userRows] = await Promise.all([
     db.select({ id: folders.id, name: folders.name, parentId: folders.parentId }).from(folders),
     db
       .select({
@@ -39,6 +45,8 @@ export async function getBootstrapData(): Promise<BootstrapData> {
         docDate: documents.docDate,
         expiryDate: documents.expiryDate,
         memo: documents.memo,
+        uploadedBy: documents.uploadedBy,
+        updatedBy: documents.updatedBy,
         createdAt: documents.createdAt,
         updatedAt: documents.updatedAt,
       })
@@ -59,6 +67,7 @@ export async function getBootstrapData(): Promise<BootstrapData> {
         and(eq(documents.id, documentTags.documentId), isNull(documents.deletedAt)),
       ),
     db.select({ id: tags.id, name: tags.name }).from(tags),
+    db.select({ id: users.id, displayName: users.displayName }).from(users),
   ]);
 
   const folderByDoc = new Map<string, string>();
@@ -80,5 +89,6 @@ export async function getBootstrapData(): Promise<BootstrapData> {
       updatedAt: d.updatedAt.toISOString(),
     })),
     tags: tagRows,
+    users: userRows,
   };
 }
