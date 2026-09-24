@@ -1,37 +1,28 @@
 import { notFound } from "next/navigation";
 import { DesktopFiler } from "@/components/home/DesktopFiler";
 import { MobileFolderView } from "@/components/home/MobileFolderView";
-import { auth } from "@/lib/auth";
 import { HttpError } from "@/lib/errors";
-import { getFilerData } from "@/server/filer";
+import { getFilerView } from "@/server/filer";
 
 // フォルダ詳細。モバイルはフォルダ画面、PC はファイラー。存在しなければ 404。
 export default async function FolderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  let filer;
+  let view;
   try {
-    filer = await getFilerData(id);
+    view = await getFilerView(id);
   } catch (e) {
     if (e instanceof HttpError && e.status === 404) notFound();
     throw e;
   }
-  const session = await auth();
 
   return (
     <>
       <div className="md:hidden">
-        <MobileFolderView view={filer.view} />
+        <MobileFolderView view={view} />
       </div>
       <div className="hidden md:block">
-        <DesktopFiler
-          displayName={session?.user?.displayName ?? ""}
-          email={session?.user?.email ?? null}
-          image={session?.user?.image ?? null}
-          sidebarFolders={filer.sidebarFolders}
-          counts={filer.counts}
-          view={filer.view}
-        />
+        <DesktopFiler view={view} />
       </div>
     </>
   );

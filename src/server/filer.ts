@@ -168,32 +168,24 @@ export async function getFilerCounts(): Promise<FilerCounts> {
   return { total: total.c, expiringSoon: expiring.c, unclassified: unclassified.c };
 }
 
-// filer ページ用の一括データ。folderId=null はルート(わが家の書類)。
-export async function getFilerData(folderId: string | null): Promise<{
-  sidebarFolders: FilerFolder[];
-  counts: FilerCounts;
-  view: FilerView;
-}> {
-  const [sidebarFolders, counts] = await Promise.all([listFolders(null), getFilerCounts()]);
-
-  let view: FilerView;
+// filer ページ用のメイン領域データ。folderId=null はルート(わが家の書類)。
+// サイドバー(ルート直下フォルダ・件数)は (filer) 共通レイアウトで別途取得する。
+export async function getFilerView(folderId: string | null): Promise<FilerView> {
   if (folderId === null) {
-    const documents = await getFilerDocuments(null);
-    view = {
+    const [folders, documents] = await Promise.all([listFolders(null), getFilerDocuments(null)]);
+    return {
       currentFolderId: null,
       breadcrumb: [{ id: null, name: "わが家の書類" }],
-      folders: sidebarFolders,
-      documents,
-    };
-  } else {
-    const detail = await getFolderDetail(folderId); // 404 は HttpError
-    const documents = await getFilerDocuments(folderId);
-    view = {
-      currentFolderId: folderId,
-      breadcrumb: [{ id: null, name: "わが家の書類" }, ...detail.breadcrumb],
-      folders: detail.children,
+      folders,
       documents,
     };
   }
-  return { sidebarFolders, counts, view };
+  const detail = await getFolderDetail(folderId); // 404 は HttpError
+  const documents = await getFilerDocuments(folderId);
+  return {
+    currentFolderId: folderId,
+    breadcrumb: [{ id: null, name: "わが家の書類" }, ...detail.breadcrumb],
+    folders: detail.children,
+    documents,
+  };
 }
