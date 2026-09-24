@@ -20,11 +20,10 @@ import { AppLink, FilerAppNavProvider } from "./AppLink";
 import { type ClientRoute, documentListScreen, matchClientRoute } from "./client-routes";
 import { DesktopFiler } from "./DesktopFiler";
 import { FilerSidebar } from "./FilerSidebar";
+import { type FilerUser, FilerUserProvider } from "./FilerUserProvider";
 import { MobileFolderView } from "./MobileFolderView";
 import { MobileHome } from "./MobileHome";
 import { useBootstrap } from "./use-bootstrap";
-
-export type FilerUser = { displayName: string; email: string | null; image: string | null };
 
 // (filer) の画面本体。サイドバーとクライアント描画ルート(ホーム/フォルダ/書類一覧/書類詳細/検索)は
 // ストアから描画し、pushState による遷移ではサーバー往復なしで即時に切り替える。
@@ -42,46 +41,50 @@ export function FilerApp({ user, children }: { user: FilerUser; children: React.
   if (route?.kind === "document") {
     const doc = documentDetail(data, route.id);
     return (
-      <FilerAppNavProvider>
-        {doc ? (
-          <div key={screenKey} className="min-h-dvh bg-gray-50">
-            <DocumentDetail doc={doc} folderOptions={folderOptions(data)} />
-          </div>
-        ) : (
-          <NotFoundPanel title="書類が見つかりません" />
-        )}
-      </FilerAppNavProvider>
+      <FilerUserProvider user={user}>
+        <FilerAppNavProvider>
+          {doc ? (
+            <div key={screenKey} className="min-h-dvh bg-gray-50">
+              <DocumentDetail doc={doc} folderOptions={folderOptions(data)} />
+            </div>
+          ) : (
+            <NotFoundPanel title="書類が見つかりません" />
+          )}
+        </FilerAppNavProvider>
+      </FilerUserProvider>
     );
   }
 
   return (
-    <FilerAppNavProvider>
-      <div className="md:flex md:h-dvh md:bg-white md:text-gray-900">
-        <div className="hidden md:flex">
-          <FilerSidebar
-            displayName={user.displayName}
-            email={user.email}
-            image={user.image}
-            sidebarFolders={childFolders(data, null)}
-            counts={filerCounts(data, today)}
-          />
-        </div>
-        <div className="min-w-0 md:flex-1">
-          {route ? (
-            <ClientScreen
-              key={screenKey}
-              route={route}
-              searchParams={searchParams}
-              data={data}
-              user={user}
-              today={today}
+    <FilerUserProvider user={user}>
+      <FilerAppNavProvider>
+        <div className="md:flex md:h-dvh md:bg-white md:text-gray-900">
+          <div className="hidden md:flex">
+            <FilerSidebar
+              displayName={user.displayName}
+              email={user.email}
+              image={user.image}
+              sidebarFolders={childFolders(data, null)}
+              counts={filerCounts(data, today)}
             />
-          ) : (
-            children
-          )}
+          </div>
+          <div className="min-w-0 md:flex-1">
+            {route ? (
+              <ClientScreen
+                key={screenKey}
+                route={route}
+                searchParams={searchParams}
+                data={data}
+                user={user}
+                today={today}
+              />
+            ) : (
+              children
+            )}
+          </div>
         </div>
-      </div>
-    </FilerAppNavProvider>
+      </FilerAppNavProvider>
+    </FilerUserProvider>
   );
 }
 

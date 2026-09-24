@@ -15,6 +15,8 @@ import { HttpError } from "@/lib/errors";
 
 // リクエスト検証スキーマ(コロケーション)
 export const createFolderSchema = z.object({
+  // 楽観的更新のためクライアントが採番した id(省略時はサーバーで採番)
+  id: z.string().uuid().optional(),
   name: z.string().trim().min(1, "名前は必須です").max(100),
   parent_id: z.string().uuid().nullable().optional(),
 });
@@ -37,12 +39,24 @@ function pgCode(e: unknown): string | undefined {
 }
 
 // drizzle は pg エラーを cause にラップするため、両方を見る。
+function pgError(e: unknown): unknown {
+  if (pgCode(e) !== undefined) return e;
+  if (typeof e === "object" && e !== null && "cause" in e) return (e as { cause: unknown }).cause;
+  return undefined;
+}
+
 function isUniqueViolation(e: unknown): boolean {
-  if (pgCode(e) === "23505") return true;
-  if (typeof e === "object" && e !== null && "cause" in e) {
-    return pgCode((e as { cause: unknown }).cause) === "23505";
+  return pgCode(pgError(e)) === "23505";
+}
+
+// unique 違反の制約名(主キー重複と名前重複を区別する)
+function violatedConstraint(e: unknown): string | undefined {
+  const err = pgError(e);
+  if (typeof err === "object" && err !== null && "constraint" in err) {
+    const c = (err as { constraint: unknown }).constraint;
+    return typeof c === "string" ? c : undefined;
   }
-  return false;
+  return undefined;
 }
 
 async function allFolderRows(): Promise<FolderRow[]> {
@@ -137,10 +151,13 @@ export async function createFolder(input: z.infer<typeof createFolderSchema>, us
   try {
     const [row] = await db
       .insert(folders)
-      .values({ name: input.name.trim(), parentId, createdBy: userId })
+      .values({ id: input.id, name: input.name.trim(), parentId, createdBy: userId })
       .returning();
     return row;
   } catch (e) {
+    if (isUniqueViolation(e) && violatedConstraint(e) === "folders_pkey") {
+      throw new HttpError(409, "同じ id のフォルダが既に存在します");
+    }
     if (isUniqueViolation(e)) throw new HttpError(409, "同じ場所に同名のフォルダがあります");
     throw e;
   }
