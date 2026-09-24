@@ -105,6 +105,8 @@ export function DocumentDetail({
     const res = await fetch(`/api/documents/${doc.id}`, { method: "DELETE" });
     if (res.ok) {
       router.push("/");
+      // 戻り先 (filer) のストアに削除済み書類が残らないよう、ハイドレーション元を取り直す
+      router.refresh();
     } else {
       setBusy(false);
       const b = await res.json().catch(() => ({}));

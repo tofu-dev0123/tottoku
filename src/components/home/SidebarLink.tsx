@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { type SidebarKey, sidebarActiveKey } from "./sidebar-active-key";
+import { AppLink } from "./AppLink";
 
 // サイドバー項目。共通レイアウトで再描画されないため、アクティブ状態は URL から判定する。
 export function SidebarLink({
@@ -23,7 +23,7 @@ export function SidebarLink({
   const active = sidebarActiveKey(usePathname(), useSearchParams()) === itemKey;
 
   return (
-    <Link
+    <AppLink
       href={href}
       className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors active:bg-gray-200 ${
         active ? "bg-blue-100 text-blue-800" : "text-gray-700 hover:bg-gray-200/60"
@@ -40,6 +40,6 @@ export function SidebarLink({
           {badge}
         </span>
       )}
-    </Link>
+    </AppLink>
   );
 }
