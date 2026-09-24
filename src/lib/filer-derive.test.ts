@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { BootstrapData, BootstrapDocument } from "@/server/bootstrap";
 import {
   childFolders,
+  documentDetail,
+  documentList,
   expiringDocuments,
   filerCounts,
   filerDocuments,
@@ -17,6 +19,8 @@ function doc(p: Partial<BootstrapDocument> & { id: string }): BootstrapDocument 
     memo: null,
     folderId: null,
     tagIds: [],
+    uploadedBy: "u1",
+    updatedBy: null,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
     ...p,
@@ -33,12 +37,26 @@ const data: BootstrapData = {
   ],
   documents: [
     doc({ id: "d1", folderId: "home", createdAt: "2026-01-02T00:00:00.000Z" }),
-    doc({ id: "d2", folderId: "ins", expiryDate: "2026-02-10" }),
+    doc({
+      id: "d2",
+      folderId: "ins",
+      expiryDate: "2026-02-10",
+      tagIds: ["t2", "t1"],
+      updatedBy: "u2",
+      memo: "年払い",
+    }),
     doc({ id: "d3", folderId: null, createdAt: "2026-01-03T00:00:00.000Z" }),
     doc({ id: "d4", folderId: null, createdAt: "2026-01-05T00:00:00.000Z" }),
     doc({ id: "d5", folderId: "car", expiryDate: "2026-01-10" }),
   ],
-  tags: [],
+  tags: [
+    { id: "t1", name: "火災" },
+    { id: "t2", name: "更新" },
+  ],
+  users: [
+    { id: "u1", displayName: "たろう" },
+    { id: "u2", displayName: "はなこ" },
+  ],
 };
 
 describe("childFolders", () => {
@@ -101,5 +119,72 @@ describe("expiringDocuments", () => {
     expect(expiringDocuments(data, "2026-01-01").map((d) => d.id)).toEqual(["d5", "d2"]);
     expect(expiringDocuments(data, "2026-01-11").map((d) => d.id)).toEqual(["d2"]);
     expect(expiringDocuments(data, "2026-01-01", 1).map((d) => d.id)).toEqual(["d5"]);
+  });
+});
+
+describe("documentList", () => {
+  const list = (filter: Parameters<typeof documentList>[1], today = "2026-01-01") =>
+    documentList(
+      {
+        ...data,
+        documents: [
+          ...data.documents,
+          doc({ id: "d6", title: "Car Insurance", createdAt: "2026-01-04T00:00:00.000Z" }),
+        ],
+      },
+      filter,
+      today,
+    ).map((d) => d.id);
+
+  it("条件なしは全件を追加日の降順で返す", () => {
+    expect(list({})).toEqual(["d4", "d6", "d3", "d1", "d2", "d5"]);
+  });
+
+  it("q はタイトルの部分一致で大文字小文字を区別しない", () => {
+    expect(list({ q: "insur" })).toEqual(["d6"]);
+  });
+
+  it("未分類はどのフォルダにも属さない書類だけを返す", () => {
+    expect(list({ unclassified: true })).toEqual(["d4", "d6", "d3"]);
+  });
+
+  it("expiringWithin は 今日〜n日後 を期限の昇順で返す", () => {
+    expect(list({ expiringWithin: 60 })).toEqual(["d5", "d2"]);
+    expect(list({ expiringWithin: 9 })).toEqual(["d5"]); // 2026-01-10 ちょうど
+    expect(list({ expiringWithin: 60 }, "2026-01-11")).toEqual(["d2"]); // 期限切れは除外
+  });
+
+  it("条件は AND で組み合わせる", () => {
+    expect(list({ q: "d", unclassified: true })).toEqual(["d4", "d3"]);
+    expect(list({ expiringWithin: 60, unclassified: true })).toEqual([]);
+  });
+});
+
+describe("documentDetail", () => {
+  it("所属フォルダ・タグ名・追加者/更新者の表示名を組み立てる", () => {
+    expect(documentDetail(data, "d2")).toEqual({
+      id: "d2",
+      title: "d2",
+      mime_type: "application/pdf",
+      doc_date: null,
+      expiry_date: "2026-02-10",
+      memo: "年払い",
+      folders: [{ id: "ins", name: "ほけん" }],
+      tags: ["更新", "火災"],
+      uploaded_by: { id: "u1", displayName: "たろう" },
+      updated_by: { id: "u2", displayName: "はなこ" },
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+    });
+  });
+
+  it("未分類・未更新の書類はフォルダ空・updated_by null になる", () => {
+    const d = documentDetail(data, "d3");
+    expect(d?.folders).toEqual([]);
+    expect(d?.updated_by).toBeNull();
+  });
+
+  it("存在しない書類は null になる", () => {
+    expect(documentDetail(data, "missing")).toBeNull();
   });
 });

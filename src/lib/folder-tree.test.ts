@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildBreadcrumb, buildTree, canMove, collectDescendantIds } from "./folder-tree";
+import {
+  buildBreadcrumb,
+  buildTree,
+  canMove,
+  collectDescendantIds,
+  flattenTree,
+} from "./folder-tree";
 import type { FolderRow } from "./folder-tree";
 
 // 契約 / 保険>(自動車,火災) / 長男
@@ -19,6 +25,20 @@ describe("buildTree", () => {
     expect(hoken.children.map((c) => c.name)).toEqual(
       ["火災", "自動車"].sort((a, b) => a.localeCompare(b, "ja")),
     );
+  });
+});
+
+describe("flattenTree", () => {
+  it("ツリー順(親の直後に子)にフラット化し深さを添える", () => {
+    const flat = flattenTree(folders);
+    const i = flat.findIndex((f) => f.id === "hoken");
+    expect(flat[i]).toEqual({ id: "hoken", name: "保険", depth: 0 });
+    expect(flat.slice(i + 1, i + 3).map((f) => [f.id, f.depth])).toEqual(
+      buildTree(folders)
+        .find((n) => n.id === "hoken")!
+        .children.map((c) => [c.id, 1]),
+    );
+    expect(flat).toHaveLength(folders.length);
   });
 });
 

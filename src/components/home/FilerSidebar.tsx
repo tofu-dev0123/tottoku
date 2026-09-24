@@ -1,7 +1,7 @@
 import { Clock, Folder, History, Home, Inbox } from "lucide-react";
 import Image from "next/image";
 import { Avatar } from "@/components/Avatar";
-import type { FilerCounts, FilerFolder } from "@/server/filer";
+import type { FilerCounts, FilerFolder } from "@/lib/filer-derive";
 import { LogoutButton } from "./LogoutButton";
 import { SidebarLink } from "./SidebarLink";
 

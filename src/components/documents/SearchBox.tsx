@@ -1,11 +1,11 @@
 "use client";
 
 import { Loader2, Search } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useAppRouter } from "@/components/home/AppLink";
 
-// 検索入力。Enter で /search?q=... へ遷移(結果はサーバー側でレンダリング)。
-// 遷移を useTransition で包み、押下直後に pending 表示を出して反応を速く見せる。
+// 検索入力。Enter で /search?q=... へ遷移(結果はストアからクライアント側で絞り込む)。
+// FilerApp の外で使われた場合は通常遷移になるため、useTransition で pending 表示を出す。
 export function SearchBox({
   initialQuery = "",
   className = "",
@@ -13,7 +13,7 @@ export function SearchBox({
   initialQuery?: string;
   className?: string;
 }) {
-  const router = useRouter();
+  const router = useAppRouter();
   const [q, setQ] = useState(initialQuery);
   const [pending, startTransition] = useTransition();
 

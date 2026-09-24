@@ -4,8 +4,7 @@ const GRID = "grid grid-cols-[1fr_180px_130px_150px] items-center";
 
 // ファイラー系(ホーム/フォルダ/一覧/検索)の遷移待ちスケルトン。
 // 実画面と同じ md:hidden / hidden md:block とコンテナ幅で描き、レイアウトシフトを抑える。
-// FilerSkeleton はサイドバー込み(共通レイアウトごと読み込むとき)、
-// FilerMainSkeleton は (filer) 配下の遷移用でメイン領域のみ(サイドバーはレイアウトが保持)。
+// (filer) の外から入るとき(共通レイアウトごと読み込むとき)に使うため、サイドバー込みで描く。
 export function FilerSkeleton() {
   return (
     <>
@@ -14,19 +13,6 @@ export function FilerSkeleton() {
       </div>
       <div className="hidden md:flex md:h-dvh md:bg-white">
         <SidebarSkeleton />
-        <DesktopMainSkeleton />
-      </div>
-    </>
-  );
-}
-
-export function FilerMainSkeleton() {
-  return (
-    <>
-      <div className="md:hidden">
-        <MobileListSkeleton />
-      </div>
-      <div className="hidden md:block">
         <DesktopMainSkeleton />
       </div>
     </>

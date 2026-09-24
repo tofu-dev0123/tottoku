@@ -1,28 +1,13 @@
 "use client";
 
 import { ArrowLeft, Download, FileText, Loader2, Pencil, Trash2 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AppLink, useAppRouter } from "@/components/home/AppLink";
 import { formatDateJST } from "@/lib/date";
+import type { DocumentDetailData } from "@/lib/filer-derive";
 import { FolderSelect, type FolderOption } from "./FolderSelect";
 import { TagsInput } from "./TagsInput";
-
-export type DocumentDetailData = {
-  id: string;
-  title: string;
-  s3_key: string;
-  mime_type: string;
-  doc_date: string | null;
-  expiry_date: string | null;
-  memo: string | null;
-  folders: { id: string; name: string }[];
-  tags: string[];
-  uploaded_by: { id: string; displayName: string } | null;
-  updated_by: { id: string; displayName: string } | null;
-  created_at: string;
-  updated_at: string;
-};
 
 function displayDate(d: string | null): string {
   return d ? d.replaceAll("-", "/") : "—";
@@ -36,6 +21,7 @@ export function DocumentDetail({
   folderOptions: FolderOption[];
 }) {
   const router = useRouter();
+  const appRouter = useAppRouter();
 
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -104,8 +90,8 @@ export function DocumentDetail({
     setError(null);
     const res = await fetch(`/api/documents/${doc.id}`, { method: "DELETE" });
     if (res.ok) {
-      router.push("/");
-      // 戻り先 (filer) のストアに削除済み書類が残らないよう、ハイドレーション元を取り直す
+      appRouter.push("/");
+      // ストアから削除済み書類を消すため、(filer) レイアウトのハイドレーション元を取り直す
       router.refresh();
     } else {
       setBusy(false);
@@ -118,13 +104,13 @@ export function DocumentDetail({
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
       <div className="mb-4 flex items-center gap-2">
-        <Link
+        <AppLink
           href="/"
           className="flex size-8 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100"
           aria-label="戻る"
         >
           <ArrowLeft className="size-5" />
-        </Link>
+        </AppLink>
         <div className="flex-1" />
         {!editing && (
           <>
@@ -237,13 +223,13 @@ export function DocumentDetail({
               {doc.folders.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {doc.folders.map((f) => (
-                    <Link
+                    <AppLink
                       key={f.id}
                       href={`/folders/${f.id}`}
                       className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-700 hover:bg-gray-200"
                     >
                       {f.name}
-                    </Link>
+                    </AppLink>
                   ))}
                 </div>
               ) : (

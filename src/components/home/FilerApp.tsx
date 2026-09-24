@@ -1,12 +1,23 @@
 "use client";
 
 import { FileQuestion } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { DesktopDocumentList } from "@/components/documents/DesktopDocumentList";
+import { DocumentDetail } from "@/components/documents/DocumentDetail";
+import { MobileDocumentList } from "@/components/documents/MobileDocumentList";
 import { todayInJST } from "@/lib/date";
-import { childFolders, expiringDocuments, filerCounts, filerView } from "@/lib/filer-derive";
+import {
+  childFolders,
+  documentDetail,
+  documentList,
+  expiringDocuments,
+  filerCounts,
+  filerView,
+  folderOptions,
+} from "@/lib/filer-derive";
 import type { BootstrapData } from "@/server/bootstrap";
 import { AppLink, FilerAppNavProvider } from "./AppLink";
-import { type ClientRoute, matchClientRoute } from "./client-routes";
+import { type ClientRoute, documentListScreen, matchClientRoute } from "./client-routes";
 import { DesktopFiler } from "./DesktopFiler";
 import { FilerSidebar } from "./FilerSidebar";
 import { MobileFolderView } from "./MobileFolderView";
@@ -15,14 +26,33 @@ import { useBootstrap } from "./use-bootstrap";
 
 export type FilerUser = { displayName: string; email: string | null; image: string | null };
 
-// (filer) の画面本体。サイドバーとクライアント描画ルート(ホーム/フォルダ)はストアから描画し、
-// pushState による遷移ではサーバー往復なしで即時に切り替える。
-// それ以外のルート(書類一覧/検索)は従来どおりサーバー描画の children を表示する。
+// (filer) の画面本体。サイドバーとクライアント描画ルート(ホーム/フォルダ/書類一覧/書類詳細/検索)は
+// ストアから描画し、pushState による遷移ではサーバー往復なしで即時に切り替える。
+// クライアント描画ルートに該当しない場合のみサーバー描画の children を表示する。
 export function FilerApp({ user, children }: { user: FilerUser; children: React.ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const route = matchClientRoute(pathname);
   const data = useBootstrap();
   const today = todayInJST();
+  // 遷移ごとに再マウントしてスクロール位置・編集/メニュー状態をリセットする
+  const screenKey = `${pathname}?${searchParams.toString()}`;
+
+  // 書類詳細はサイドバーなしの全幅画面(従来の体裁)
+  if (route?.kind === "document") {
+    const doc = documentDetail(data, route.id);
+    return (
+      <FilerAppNavProvider>
+        {doc ? (
+          <div key={screenKey} className="min-h-dvh bg-gray-50">
+            <DocumentDetail doc={doc} folderOptions={folderOptions(data)} />
+          </div>
+        ) : (
+          <NotFoundPanel title="書類が見つかりません" />
+        )}
+      </FilerAppNavProvider>
+    );
+  }
 
   return (
     <FilerAppNavProvider>
@@ -38,8 +68,14 @@ export function FilerApp({ user, children }: { user: FilerUser; children: React.
         </div>
         <div className="min-w-0 md:flex-1">
           {route ? (
-            // 遷移ごとに再マウントしてスクロール位置・メニュー状態をリセットする
-            <ClientScreen key={pathname} route={route} data={data} user={user} today={today} />
+            <ClientScreen
+              key={screenKey}
+              route={route}
+              searchParams={searchParams}
+              data={data}
+              user={user}
+              today={today}
+            />
           ) : (
             children
           )}
@@ -51,17 +87,40 @@ export function FilerApp({ user, children }: { user: FilerUser; children: React.
 
 function ClientScreen({
   route,
+  searchParams,
   data,
   user,
   today,
 }: {
-  route: ClientRoute;
+  route: Exclude<ClientRoute, { kind: "document" }>;
+  searchParams: URLSearchParams;
   data: BootstrapData;
   user: FilerUser;
   today: string;
 }) {
+  if (route.kind === "documents" || route.kind === "search") {
+    const screen = documentListScreen(route.kind, searchParams);
+    const documents = screen.params ? documentList(data, screen.params, today) : [];
+    const props = {
+      title: screen.title,
+      documents,
+      search: screen.search,
+      emptyMessage: screen.emptyMessage,
+    };
+    return (
+      <>
+        <div className="md:hidden">
+          <MobileDocumentList {...props} />
+        </div>
+        <div className="hidden md:block">
+          <DesktopDocumentList {...props} />
+        </div>
+      </>
+    );
+  }
+
   const view = filerView(data, route.kind === "folder" ? route.id : null);
-  if (!view) return <FolderNotFound />;
+  if (!view) return <NotFoundPanel title="フォルダが見つかりません" />;
 
   const mobile =
     route.kind === "home" ? (
@@ -84,15 +143,15 @@ function ClientScreen({
   );
 }
 
-// 存在しない(削除された)フォルダ。app/not-found.tsx と同じ体裁でメイン領域に出す。
-function FolderNotFound() {
+// 存在しない(削除された)フォルダ/書類。app/not-found.tsx と同じ体裁で出す。
+function NotFoundPanel({ title }: { title: string }) {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-gray-50 px-6 text-center md:h-dvh md:min-h-0 md:bg-white">
       <span className="flex size-14 items-center justify-center rounded-full bg-gray-100 text-gray-400">
         <FileQuestion className="size-7" />
       </span>
       <div>
-        <h1 className="text-lg font-semibold text-gray-900">フォルダが見つかりません</h1>
+        <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
         <p className="mt-1 text-sm text-gray-500">移動または削除された可能性があります。</p>
       </div>
       <AppLink

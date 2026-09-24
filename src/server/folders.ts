@@ -8,6 +8,7 @@ import {
   buildTree,
   canMove,
   collectDescendantIds,
+  flattenTree,
   type FolderRow,
 } from "@/lib/folder-tree";
 import { HttpError } from "@/lib/errors";
@@ -94,15 +95,7 @@ export async function getFolderTree() {
 
 // 書類の所属フォルダ選択 UI 用。ツリー順にフラット化し、深さ(depth)を添えて返す。
 export async function getFolderOptions(): Promise<{ id: string; name: string; depth: number }[]> {
-  const out: { id: string; name: string; depth: number }[] = [];
-  const walk = (nodes: Awaited<ReturnType<typeof getFolderTree>>, depth: number) => {
-    for (const n of nodes) {
-      out.push({ id: n.id, name: n.name, depth });
-      walk(n.children, depth + 1);
-    }
-  };
-  walk(buildTree(await allFolderRows()), 0);
-  return out;
+  return flattenTree(await allFolderRows());
 }
 
 // 1件 + パンくず + 直下の子フォルダ + 直下の書類。

@@ -1,7 +1,7 @@
 import { FileText, Upload } from "lucide-react";
-import Link from "next/link";
+import { AppLink } from "@/components/home/AppLink";
 import { formatDateJST, todayInJST } from "@/lib/date";
-import type { FilerDocument } from "@/server/filer";
+import type { FilerDocument } from "@/lib/filer-derive";
 import { ExpiryPill } from "./ExpiryPill";
 import { SearchBox } from "./SearchBox";
 
@@ -28,13 +28,13 @@ export function DesktopDocumentList({
         <h1 className="text-[15px] font-semibold">{title}</h1>
         <div className="flex-1" />
         <SearchBox initialQuery={search?.query ?? ""} className="w-64" />
-        <Link
+        <AppLink
           href="/documents/new"
           className="flex items-center gap-1.5 rounded-lg bg-blue-700 px-3 py-2 text-[13px] font-semibold text-white"
         >
           <Upload className="size-4" />
           書類を追加
-        </Link>
+        </AppLink>
       </div>
 
       <div className="flex-1 overflow-auto">
@@ -48,7 +48,7 @@ export function DesktopDocumentList({
         </div>
 
         {documents.map((d) => (
-          <Link
+          <AppLink
             key={d.id}
             href={`/documents/${d.id}`}
             className={`${GRID} border-b border-gray-100 px-5 py-2.5 transition-colors hover:bg-gray-50 active:bg-gray-100`}
@@ -64,7 +64,7 @@ export function DesktopDocumentList({
             <span className="text-right">
               <ExpiryPill expiryDate={d.expiryDate} today={today} />
             </span>
-          </Link>
+          </AppLink>
         ))}
 
         {documents.length === 0 && (
