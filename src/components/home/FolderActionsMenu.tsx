@@ -1,16 +1,25 @@
 "use client";
 
 import { FolderInput, MoreVertical, Pencil, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { type ReactNode, useState } from "react";
-import { MoveDialog } from "./MoveDialog";
+import {
+  folderDeletionImpact,
+  folderMoveError,
+  hasFolderNameConflict,
+  moveFolder,
+  renameFolder,
+} from "@/lib/store-updates";
 import { useAppRouter } from "./AppLink";
+import { MoveDialog } from "./MoveDialog";
+import { useBootstrap } from "./use-bootstrap";
+import { apiFetch, useStoreMutation, useUndoableDelete } from "./use-store-mutations";
 
-type Impact = { descendantFolderCount: number; documentCount: number };
+type RenameVars = { id: string; name: string };
+type MoveVars = { id: string; parentId: string | null };
 
-// フォルダのリネーム/削除メニュー(ケバブ)。作成 UI(NewFolderButton)と同方針:
-// 自前モーダル + fetch + router.refresh()、トーストは使わずインラインでエラー表示。
-// redirectTo を渡すと削除後にそのパスへ遷移(詳細画面で自フォルダを消したとき用)。
+// フォルダのリネーム/移動/削除メニュー(ケバブ)。いずれも楽観的更新で即座に画面へ反映する。
+// 同名・循環参照はストアで先に検出してダイアログ内に出し、サーバーでの失敗はトーストで通知して元に戻す。
+// 削除は「元に戻す」付き。redirectTo を渡すと削除時にそのパスへ遷移(フォルダ画面で自フォルダを消したとき用)。
 export function FolderActionsMenu({
   folder,
   redirectTo,
@@ -20,17 +29,36 @@ export function FolderActionsMenu({
   redirectTo?: string;
   variant?: "row" | "header";
 }) {
-  const router = useRouter();
   const appRouter = useAppRouter();
+  const data = useBootstrap();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mode, setMode] = useState<"rename" | "move" | "delete" | null>(null);
   const [name, setName] = useState(folder.name);
-  const [impact, setImpact] = useState<Impact | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+
+  const rename = useStoreMutation<RenameVars>({
+    request: (v) =>
+      apiFetch(
+        `/api/folders/${v.id}`,
+        { method: "PATCH", body: JSON.stringify({ name: v.name }) },
+        "名前の変更に失敗しました",
+      ),
+    apply: (d, v) => renameFolder(d, v.id, v.name),
+  });
+  const move = useStoreMutation<MoveVars>({
+    request: (v) =>
+      apiFetch(
+        `/api/folders/${v.id}`,
+        { method: "PATCH", body: JSON.stringify({ parent_id: v.parentId }) },
+        "移動に失敗しました",
+      ),
+    apply: (d, v) => moveFolder(d, v.id, v.parentId),
+  });
+  const undoableDelete = useUndoableDelete();
+
+  const parentId = data.folders.find((f) => f.id === folder.id)?.parentId ?? null;
 
   function close() {
-    if (busy) return;
     setMode(null);
     setError(null);
   }
@@ -48,73 +76,43 @@ export function FolderActionsMenu({
     setMode("move");
   }
 
-  // 移動先へ parent_id を更新。循環参照はサーバ側 canMove が弾く(候補からも除外済み)。
-  async function moveTo(targetId: string | null): Promise<string | null> {
-    const res = await fetch(`/api/folders/${folder.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ parent_id: targetId }),
-    });
-    if (res.ok) {
-      router.refresh();
-      return null;
-    }
-    const body = await res.json().catch(() => ({}));
-    return body.error ?? "移動に失敗しました";
-  }
-
-  async function openDelete() {
+  function openDelete() {
     setMenuOpen(false);
     setError(null);
-    setImpact(null);
     setMode("delete");
-    // 削除の影響件数を取得(子孫フォルダ数・紐付け解除される書類数)
-    const res = await fetch(`/api/folders/${folder.id}`);
-    const body = res.ok ? await res.json().catch(() => null) : null;
-    setImpact(body?.impact ?? { descendantFolderCount: 0, documentCount: 0 });
   }
 
-  async function submitRename() {
+  // 循環参照・移動先の同名はストアで先に弾く(候補からも自分と子孫は除外済み)
+  function moveTo(targetId: string | null): string | null {
+    const reason = folderMoveError(data, folder.id, targetId);
+    if (reason) return reason;
+    if (targetId !== parentId) move.mutate({ id: folder.id, parentId: targetId });
+    return null;
+  }
+
+  function submitRename() {
     const next = name.trim();
-    if (!next || busy) return;
+    if (!next) return;
     if (next === folder.name) {
       setMode(null);
       return;
     }
-    setBusy(true);
-    setError(null);
-    const res = await fetch(`/api/folders/${folder.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: next }),
-    });
-    setBusy(false);
-    if (res.ok) {
-      setMode(null);
-      router.refresh();
-    } else {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "変更に失敗しました");
+    if (hasFolderNameConflict(data, parentId, next, folder.id)) {
+      setError("同じ場所に同名のフォルダがあります");
+      return;
     }
+    rename.mutate({ id: folder.id, name: next });
+    setMode(null);
   }
 
-  async function submitDelete() {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    const res = await fetch(`/api/folders/${folder.id}`, { method: "DELETE" });
-    if (res.ok) {
-      setBusy(false);
-      setMode(null);
-      // 削除したフォルダから親へ移る。ストア(レイアウトのハイドレーション)は refresh で更新する
-      if (redirectTo) appRouter.push(redirectTo);
-      router.refresh();
-    } else {
-      setBusy(false);
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "削除に失敗しました");
-    }
+  function submitDelete() {
+    setMode(null);
+    // 削除したフォルダを開いていたら親へ移る
+    if (redirectTo) appRouter.push(redirectTo);
+    undoableDelete({ kind: "folder", id: folder.id, label: folder.name });
   }
+
+  const impact = mode === "delete" ? folderDeletionImpact(data, folder.id) : null;
 
   const triggerClass =
     variant === "header"
@@ -177,18 +175,21 @@ export function FolderActionsMenu({
           <input
             autoFocus
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              setError(null);
+            }}
             onKeyDown={(e) => e.key === "Enter" && submitRename()}
             placeholder="フォルダ名"
             className="mt-3 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
           />
           {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
           <ModalActions>
-            <CancelButton onClick={close} disabled={busy} />
+            <CancelButton onClick={close} />
             <button
               type="button"
               onClick={submitRename}
-              disabled={busy || !name.trim()}
+              disabled={!name.trim()}
               className="rounded-lg bg-blue-700 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
             >
               保存
@@ -210,9 +211,7 @@ export function FolderActionsMenu({
       {mode === "delete" && (
         <Modal onClose={close}>
           <h2 className="text-sm font-semibold">「{folder.name}」を削除しますか？</h2>
-          {impact === null ? (
-            <p className="mt-3 text-xs text-gray-400">確認中…</p>
-          ) : (
+          {impact && (
             <div className="mt-3 space-y-1 text-xs text-gray-600">
               {impact.descendantFolderCount > 0 && (
                 <p>・配下のサブフォルダ {impact.descendantFolderCount} 個も削除されます</p>
@@ -223,18 +222,14 @@ export function FolderActionsMenu({
                   件は削除されず、どのフォルダにも属さなくなったものは「未分類」になります
                 </p>
               )}
-              {impact.descendantFolderCount === 0 && impact.documentCount === 0 && (
-                <p>この操作は取り消せません。</p>
-              )}
+              <p>削除後しばらくは「元に戻す」で取り消せます。</p>
             </div>
           )}
-          {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
           <ModalActions>
-            <CancelButton onClick={close} disabled={busy} />
+            <CancelButton onClick={close} />
             <button
               type="button"
               onClick={submitDelete}
-              disabled={busy || impact === null}
               className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
             >
               削除する
@@ -266,13 +261,12 @@ function ModalActions({ children }: { children: ReactNode }) {
   return <div className="mt-4 flex justify-end gap-2">{children}</div>;
 }
 
-function CancelButton({ onClick, disabled }: { onClick: () => void; disabled: boolean }) {
+function CancelButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
-      className="rounded-lg px-3 py-1.5 text-sm text-gray-500 disabled:opacity-50"
+      className="rounded-lg px-3 py-1.5 text-sm text-gray-500"
     >
       キャンセル
     </button>

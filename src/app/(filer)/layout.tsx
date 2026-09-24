@@ -6,7 +6,8 @@ import { getBootstrapData } from "@/server/bootstrap";
 
 // ファイラー系(ホーム/フォルダ/一覧/検索)の共通レイアウト。全メタデータを1回だけ取得して
 // クライアントストア(TanStack Query)へハイドレーションし、以降の描画は FilerApp がストアから行う。
-// 変更後の router.refresh() でレイアウトが再描画されると、新しいデータが再ハイドレーションされる。
+// 変更は楽観的更新でストアへ即反映し、完了後に /api/bootstrap を再取得して揃える。
+// (router.refresh() でレイアウトが再描画された場合も、新しいデータが再ハイドレーションされる)
 
 // 認証必須・家族の最新データを毎リクエスト出すため、配下全体を動的化する
 // (ビルド時に静的プリレンダリングされて DB データが焼き込まれるのを防ぐ)。
@@ -22,6 +23,7 @@ export default async function FilerLayout({ children }: { children: React.ReactN
     <HydrationBoundary state={dehydrate(queryClient)}>
       <FilerApp
         user={{
+          id: session?.user?.id ?? "",
           displayName: session?.user?.displayName ?? "",
           email: session?.user?.email ?? null,
           image: session?.user?.image ?? null,
