@@ -6,6 +6,7 @@ export type ClientRoute =
   | { kind: "folder"; id: string }
   | { kind: "documents" }
   | { kind: "document"; id: string }
+  | { kind: "new" }
   | { kind: "search" };
 
 export function matchClientRoute(pathname: string): ClientRoute | null {
@@ -15,9 +16,9 @@ export function matchClientRoute(pathname: string): ClientRoute | null {
   if (pathname === "/search") return { kind: "search" };
   const m = pathname.match(/^\/folders\/([^/]+)$/);
   if (m) return { kind: "folder", id: decodeURIComponent(m[1]) };
-  // /documents/new(アップロード)は (filer) の外のサーバー描画ページ
+  if (pathname === "/documents/new") return { kind: "new" };
   const d = pathname.match(/^\/documents\/([^/]+)$/);
-  if (d && d[1] !== "new") return { kind: "document", id: decodeURIComponent(d[1]) };
+  if (d) return { kind: "document", id: decodeURIComponent(d[1]) };
   return null;
 }
 

@@ -5,6 +5,7 @@ import type { FilerView } from "@/lib/filer-derive";
 import { DocumentActionsMenu } from "./DocumentActionsMenu";
 import { FolderActionsMenu } from "./FolderActionsMenu";
 import { NewFolderButton } from "./NewFolderButton";
+import { UploadRows, useUploadsIn } from "./UploadRows";
 import { AppLink } from "./AppLink";
 
 function folderHref(id: string | null): string {
@@ -13,6 +14,7 @@ function folderHref(id: string | null): string {
 
 // モバイルのフォルダ画面(画面2)。フォルダ/書類の一覧・遷移・作成。
 export function MobileFolderView({ view }: { view: FilerView }) {
+  const uploads = useUploadsIn(view.currentFolderId);
   const parent = view.breadcrumb.length > 1 ? view.breadcrumb[view.breadcrumb.length - 2] : null;
   const current = view.breadcrumb[view.breadcrumb.length - 1];
 
@@ -58,6 +60,8 @@ export function MobileFolderView({ view }: { view: FilerView }) {
           </div>
         ))}
 
+        <UploadRows folderId={view.currentFolderId} dense />
+
         {view.documents.map((d) => (
           <div key={d.id} className="relative">
             <AppLink
@@ -78,7 +82,7 @@ export function MobileFolderView({ view }: { view: FilerView }) {
           </div>
         ))}
 
-        {view.folders.length === 0 && view.documents.length === 0 && (
+        {view.folders.length === 0 && view.documents.length === 0 && uploads.length === 0 && (
           <p className="py-12 text-center text-sm text-gray-400">このフォルダは空です</p>
         )}
       </div>
